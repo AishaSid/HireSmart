@@ -12,7 +12,7 @@ interface CVGeneratorFormProps {
   onBack: () => void
 }
 
-export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
+export default function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
   const [formData, setFormData] = useState({
     personalInfo: {
       fullName: "",
