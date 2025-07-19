@@ -19,7 +19,7 @@ import {
     X,
 } from "lucide-react"
 
- import { CVGeneratorForm } from "../cvgenerator/page"
+ import { CVGeneratorForm } from "./cvgenerator"
 // import { ResumeTemplates } from "./resume-templates"
 // import { MyResumes } from "./my-resumes"
 // import { CoverLetterGenerator } from "./cover-letter-generator"
