@@ -19,7 +19,7 @@ import {
     X,
 } from "lucide-react"
 
-// import { CVGeneratorForm } from "./cv-generator-form"
+ import { CVGeneratorForm } from "../cvgenerator/page"
 // import { ResumeTemplates } from "./resume-templates"
 // import { MyResumes } from "./my-resumes"
 // import { CoverLetterGenerator } from "./cover-letter-generator"
@@ -84,7 +84,7 @@ export default function Dashboard() {
     const renderContent = () => {
         switch (activeSection) {
             case "cv-generator":
-            // return <CVGeneratorForm onBack={() => setActiveSection("dashboard")} />
+             return <CVGeneratorForm onBack={() => setActiveSection("dashboard")} />
             case "templates":
             // return <ResumeTemplates onBack={() => setActiveSection("dashboard")} />
             case "my-resumes":
