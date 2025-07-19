@@ -23,7 +23,7 @@ import {
 // import { ResumeTemplates } from "./resume-templates"
 // import { MyResumes } from "./my-resumes"
 // import { CoverLetterGenerator } from "./cover-letter-generator"
-// import { ATSOptimizer } from "./ats-optimizer"
+ import { ATSOptimizer } from "../atsoptimize/ats"
 
 export default function Dashboard() {
     const [activeSection, setActiveSection] = useState("dashboard")
@@ -92,7 +92,7 @@ export default function Dashboard() {
             case "cover-letter":
             // return <CoverLetterGenerator onBack={() => setActiveSection("dashboard")} />
             case "ats-optimizer":
-            // return <ATSOptimizer onBack={() => setActiveSection("dashboard")} />
+             return <ATSOptimizer onBack={() => setActiveSection("dashboard")} />
             default:
                 return (
                     <div className="space-y-12">
