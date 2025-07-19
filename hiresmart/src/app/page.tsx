@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 
 
 export default function Home() {
- 
+
   const router = useRouter();
 
   return (
     <div className="min-h-screen bg-gradient-background flex items-center justify-center relative overflow-hidden">
       {/* Background Image */}
-    
+
 
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
@@ -55,9 +55,11 @@ export default function Home() {
           <div className="animate-slide-in-right flex justify-center" style={{ animationDelay: '0.3s' }}>
             <Button
               size="lg"
-              onClick = {() => router.push('/pages/signup')}
+              
+              onClick={() => router.push('/pages/signup')}
+
               className="w-[300px] py-8 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-              >
+            >
               Build Your Resume
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>

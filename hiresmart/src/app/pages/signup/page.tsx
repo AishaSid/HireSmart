@@ -32,7 +32,7 @@ export default function Signup() {
             .maybeSingle();
 
         if (data) {
-            router.push('/main');
+            router.push('/pages/dashboard');
         } else {
             setStep(2);
         }
