@@ -27,6 +27,46 @@ export function CoverLetter({ onBack }: CoverLetterProps) {
   const [generatedLetter, setGeneratedLetter] = useState("")
   const [showPreview, setShowPreview] = useState(false)
 
+  // Custom animated input component
+  const AnimatedInput = ({ label, value, onChange, placeholder, type = "text", id }: any) => (
+    <div className="relative">
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder=" "
+        className="h-14 text-lg border-2 peer placeholder-transparent hover:shadow-lg hover:shadow-blue-400 focus:shadow-lg focus:shadow-indigo-400 focus:border-blue-500 focus:border-2"
+      />
+      <label
+        htmlFor={id}
+        className="absolute left-3 text-lg text-gray-600 transition-all duration-200 transform -translate-y-1/2 top-1/2 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-lg peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:text-sm peer-focus:text-indigo-600 peer-focus:bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:text-indigo-600 peer-[:not(:placeholder-shown)]:bg-white peer-[:not(:placeholder-shown)]:px-1"
+      >
+        {label}
+      </label>
+    </div>
+  )
+
+  // Custom animated textarea component
+  const AnimatedTextarea = ({ label, value, onChange, placeholder, rows = 4, id }: any) => (
+    <div className="relative">
+      <Textarea
+        id={id}
+        value={value}
+        onChange={onChange}
+        placeholder=" "
+        rows={rows}
+        className="min-h-20 text-lg border-2 border-transparent peer placeholder-transparent resize-none hover:shadow-lg hover:shadow-blue-400 focus:shadow-lg focus:shadow-indigo-400 focus:border-blue-500 focus:border-2"
+      />
+      <label
+        htmlFor={id}
+        className="absolute left-3 text-lg text-gray-600 transition-all duration-200 transform -translate-y-1/2 top-6 peer-placeholder-shown:top-6 peer-placeholder-shown:text-lg peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:text-sm peer-focus:text-indigo-600 peer-focus:bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:text-indigo-600 peer-[:not(:placeholder-shown)]:bg-white peer-[:not(:placeholder-shown)]:px-1"
+      >
+        {label}
+      </label>
+    </div>
+  )
+
   const handleGenerate = async () => {
     setIsGenerating(true)
     // Simulate API call
@@ -78,16 +118,16 @@ Sincerely,
           </div>
         </div>
 
-        <Card className="max-w-4xl mx-auto">
+        <Card className="max-w-4xl mx-auto border-2">
           <CardHeader>
             <CardTitle className="text-3xl">Generated Cover Letter</CardTitle>
-            <CardDescription>
+            <CardDescription className="text-lg">
               AI-generated cover letter for {formData.jobTitle} at {formData.companyName}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="bg-white shadow-lg rounded-lg p-8 animate-in fade-in duration-500">
-              <div className="whitespace-pre-line text-gray-800 leading-relaxed">{generatedLetter}</div>
+              <div className="whitespace-pre-line text-gray-800 leading-relaxed text-lg">{generatedLetter}</div>
             </div>
           </CardContent>
         </Card>
@@ -95,7 +135,7 @@ Sincerely,
     )
   }
 
-    useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
@@ -107,103 +147,89 @@ Sincerely,
           Back to Dashboard
         </Button>
       </div>
-       <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-          Generate Cover Letter
-        </h1>
+      <h1 className="text-6xl font-bold text-center mb-8 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+        Generate Cover Letter
+      </h1>
 
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-3xl mx-auto space-y-8">
         {/* Job Information */}
-        <Card className="animate-in slide-in-from-bottom-4 duration-500">
+        <Card className="animate-in slide-in-from-bottom-4 duration-500 border-2">
           <CardHeader>
             <CardTitle className="text-2xl text-indigo-500">Job Information</CardTitle>
-            <CardDescription>Tell us about the position you're applying for</CardDescription>
+            <CardDescription className="text-lg">Tell us about the position you're applying for</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="jobTitle">Job Title</Label>
-                <Input
-                  id="jobTitle"
-                  value={formData.jobTitle}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, jobTitle: e.target.value }))}
-                  placeholder="e.g., Senior Software Engineer"
-                />
-              </div>
-              <div>
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
-                  placeholder="e.g., TechCorp Inc."
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="hiringManager">Hiring Manager Name (Optional)</Label>
-              <Input
-                id="hiringManager"
-                value={formData.hiringManager}
-                onChange={(e) => setFormData((prev) => ({ ...prev, hiringManager: e.target.value }))}
-                placeholder="e.g., John Smith"
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <AnimatedInput
+                id="jobTitle"
+                label="Job Title"
+                value={formData.jobTitle}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, jobTitle: e.target.value }))}
+              />
+              <AnimatedInput
+                id="companyName"
+                label="Company Name"
+                value={formData.companyName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
               />
             </div>
+            <AnimatedInput
+              id="hiringManager"
+              label="Hiring Manager Name (Optional)"
+              value={formData.hiringManager}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, hiringManager: e.target.value }))}
+            />
           </CardContent>
         </Card>
 
         {/* Job Description */}
-        <Card className="animate-in slide-in-from-bottom-4 duration-500">
+        <Card className="animate-in slide-in-from-bottom-4 duration-500 border-2">
           <CardHeader>
             <CardTitle className="text-2xl text-indigo-500">Job Description</CardTitle>
-            <CardDescription>Paste the job description or key requirements</CardDescription>
+            <CardDescription className="text-lg">Paste the job description or key requirements</CardDescription>
           </CardHeader>
           <CardContent>
-            <Textarea
+            <AnimatedTextarea
+              id="jobDescription"
+              label="Job Description or Key Requirements"
               value={formData.jobDescription}
-              onChange={(e) => setFormData((prev) => ({ ...prev, jobDescription: e.target.value }))}
-              placeholder="Paste the job description here or describe the key requirements..."
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((prev) => ({ ...prev, jobDescription: e.target.value }))}
               rows={6}
             />
           </CardContent>
         </Card>
 
         {/* Your Background */}
-        <Card className="animate-in slide-in-from-bottom-4 duration-500">
+        <Card className="animate-in slide-in-from-bottom-4 duration-500 border-2">
           <CardHeader>
             <CardTitle className="text-2xl text-indigo-500">Your Background</CardTitle>
-            <CardDescription>Help us understand your qualifications</CardDescription>
+            <CardDescription className="text-lg">Help us understand your qualifications</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="keySkills">Key Skills & Technologies</Label>
-              <Input
-                id="keySkills"
-                value={formData.keySkills}
-                onChange={(e) => setFormData((prev) => ({ ...prev, keySkills: e.target.value }))}
-                placeholder="e.g., React, Node.js, Python, AWS, Docker"
-              />
-            </div>
-            <div>
-              <Label htmlFor="experience">Relevant Experience</Label>
-              <Textarea
-                id="experience"
-                value={formData.experience}
-                onChange={(e) => setFormData((prev) => ({ ...prev, experience: e.target.value }))}
-                placeholder="Describe your relevant work experience, achievements, and projects..."
-                rows={4}
-              />
-            </div>
+          <CardContent className="space-y-6">
+            <AnimatedInput
+              id="keySkills"
+              label="Key Skills & Technologies"
+              value={formData.keySkills}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, keySkills: e.target.value }))}
+            />
+            <AnimatedTextarea
+              id="experience"
+              label="Relevant Experience"
+              value={formData.experience}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((prev) => ({ ...prev, experience: e.target.value }))}
+              rows={4}
+            />
           </CardContent>
         </Card>
 
         {/* Tone Selection */}
-        <Card className="animate-in slide-in-from-bottom-4 duration-500">
+        <Card className="animate-in slide-in-from-bottom-4 duration-500 border-2">
           <CardHeader>
             <CardTitle className="text-2xl text-indigo-500">Writing Tone</CardTitle>
-            <CardDescription>Choose the tone for your cover letter</CardDescription>
+            <CardDescription className="text-lg">Choose the tone for your cover letter</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { value: "professional", label: "Professional", description: "Formal and business-like" },
                 { value: "enthusiastic", label: "Enthusiastic", description: "Energetic and passionate" },
@@ -211,14 +237,14 @@ Sincerely,
               ].map((tone) => (
                 <Card
                   key={tone.value}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    formData.tone === tone.value ? "ring-2 ring-indigo-500 bg-indigo-50" : "hover:bg-gray-50"
+                  className={`cursor-pointer transition-all duration-200 border-2 hover:shadow-lg hover:shadow-blue-400 ${
+                    formData.tone === tone.value ? "ring-2 ring-indigo-500 bg-indigo-50 border-indigo-500" : "hover:bg-gray-50"
                   }`}
                   onClick={() => setFormData((prev) => ({ ...prev, tone: tone.value }))}
                 >
-                  <CardContent className="p-4 text-center">
-                    <h3 className="font-semibold text-gray-900 mb-1">{tone.label}</h3>
-                    <p className="text-sm text-gray-600">{tone.description}</p>
+                  <CardContent className="p-6 text-center">
+                    <h3 className="font-semibold text-gray-900 mb-2 text-lg">{tone.label}</h3>
+                    <p className="text-base text-gray-600">{tone.description}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -232,7 +258,7 @@ Sincerely,
             onClick={handleGenerate}
             disabled={isGenerating || !formData.jobTitle || !formData.companyName}
             size="lg"
-            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 px-12 py-3 text-xl"
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 px-16 py-5 text-xl h-16"
           >
             {isGenerating ? (
               <div className="flex items-center gap-2">
@@ -242,7 +268,7 @@ Sincerely,
             ) : (
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
-                Generate Cover Letter
+                Generate My Cover Letter
               </div>
             )}
           </Button>
