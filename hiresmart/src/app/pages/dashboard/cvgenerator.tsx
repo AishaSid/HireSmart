@@ -285,7 +285,7 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           Back to Dashboard
         </Button>
       </div>
-      <h1 className="text-6xl font-bold text-center mb-8 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">Create Your CV</h1>
+      <h1 className="text-6xl font-bold text-center mb-8 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Create Your CV</h1>
 
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Personal Information */}

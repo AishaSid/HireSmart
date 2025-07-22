@@ -49,7 +49,7 @@ export default function Signup() {
         if (!error) {
             setSignupStatus({ success: true, message: 'Signup Successful' });
             setTimeout(() => {
-                router.push('/main');
+                router.push('/pages/dashboard');
             }, 1500);
         } else {
             setSignupStatus({ success: false, message: error.message || 'Signup failed. Please try again.' });

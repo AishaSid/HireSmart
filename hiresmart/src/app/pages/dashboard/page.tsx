@@ -15,19 +15,20 @@ import {
     TrendingUp,
     Zap,
     ArrowRight,
-    Menu,
-    X,
 } from "lucide-react"
 
  import { CVGeneratorForm } from "./cvgenerator"
-// import { ResumeTemplates } from "./resume-templates"
-// import { MyResumes } from "./my-resumes"
-// import { CoverLetterGenerator } from "./cover-letter-generator"
  import { ATSOptimizer } from "../atsoptimize/ats"
+ import { useRouter } from "next/navigation"
+ import Templates from "../resumetemplates/templates";
+ import CoverLetter from "../coverletter/cover";
+ import MyResumes from "../myresume/myresume";
+ 
 
 export default function Dashboard() {
     const [activeSection, setActiveSection] = useState("dashboard")
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const router = useRouter()
 
     const features = [
         {
@@ -86,11 +87,11 @@ export default function Dashboard() {
             case "cv-generator":
              return <CVGeneratorForm onBack={() => setActiveSection("dashboard")} />
             case "templates":
-            // return <ResumeTemplates onBack={() => setActiveSection("dashboard")} />
+             return <Templates onBack={() => setActiveSection("dashboard")} />
             case "my-resumes":
-            // return <MyResumes onBack={() => setActiveSection("dashboard")} />
+             return <MyResumes onBack={() => setActiveSection("dashboard")} />
             case "cover-letter":
-            // return <CoverLetterGenerator onBack={() => setActiveSection("dashboard")} />
+             return <CoverLetter onBack={() => setActiveSection("dashboard")} />
             case "ats-optimizer":
              return <ATSOptimizer onBack={() => setActiveSection("dashboard")} />
             default:
@@ -113,7 +114,7 @@ export default function Dashboard() {
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in slide-in-from-bottom-4 duration-500 delay-300">
                                     <Button
                                         size="lg"
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-full transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-5.5 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold rounded-lg "
                                         onClick={() => setActiveSection("templates")}
                                     >
                                         <Sparkles className="mr-2 h-5 w-5" />
@@ -122,7 +123,7 @@ export default function Dashboard() {
                                     <Button
                                         variant="outline"
                                         size="lg"
-                                        className="border-2 border-indigo-200 hover:border-indigo-300 px-8 py-3 rounded-full transform hover:scale-105 transition-all duration-200 bg-transparent"
+                                        className="border-2 border-indigo-200 hover:border-indigo-300 px-8 py-5  transform hover:scale-105 transition-all duration-200 bg-transparent text-lg font-semibold rounded-lg"
                                         onClick={() => setActiveSection("templates")}
                                     >
                                         <Eye className="mr-2 h-5 w-5" />
@@ -201,7 +202,7 @@ export default function Dashboard() {
                                 </p>
                                 <Button
                                     size="lg"
-                                    className="bg-gradient-to-r from-blue-400 to-indigo-700 bg-clip-text  hover:from-blue-600 hover:to-indigo-600 px-8 py-3 rounded-full transform hover:scale-105 transition-all duration-200 shadow-xl hover:shadow-xxl text-white border-1 border-indigo-600 hover:border-indigo-600"
+                                    className="bg-white text-blue-500 hover:bg-gray-100 px-8 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl py-6 text-lg font-semibold rounded-lg"
                                     onClick={() => setActiveSection("cv-generator")}
                                 >
                                     <Plus className="mr-2 h-5 w-5" />

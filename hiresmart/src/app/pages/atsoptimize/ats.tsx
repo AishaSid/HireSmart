@@ -274,10 +274,10 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Button>
-        <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+      </div>
+      <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
           ATS Optimizer
         </h1>
-      </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Upload Section */}

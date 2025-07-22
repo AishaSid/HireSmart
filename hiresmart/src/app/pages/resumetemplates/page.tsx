@@ -1,7 +1,12 @@
+
+import React from 'react';
+//import TemplatePage from './templates';
+
+
 export default function Page() {
     return (
-      <div>
-        ATS Optimize Page Works!
-      </div>
+  <div>
+   
+  </div>  
     );
   }
