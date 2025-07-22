@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Upload, CheckCircle, AlertTriangle, XCircle, Download, Zap } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface ATSOptimizerProps {
   onBack: () => void
@@ -266,9 +267,18 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
       </div>
     )
   }
+
+  const router = useRouter()
   useEffect(() => {
-  window.scrollTo(0, 0);
-}, []);
+    window.history.pushState(null, '', window.location.href)
+    window.onpopstate = () => {
+      router.replace('/pages/dashboard')
+    }
+    window.scrollTo(0, 0);
+    return () => {
+      window.onpopstate = null
+    }
+  }, [])
 
 
   return (

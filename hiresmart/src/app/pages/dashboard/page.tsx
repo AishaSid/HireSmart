@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -17,7 +17,7 @@ import {
     ArrowRight,
 } from "lucide-react"
 
- import { CVGeneratorForm } from "./cvgenerator"
+ import { CVGeneratorForm } from "../cvgen/cvgenerator"
  import { ATSOptimizer } from "../atsoptimize/ats"
  import { useRouter } from "next/navigation"
  import Templates from "../resumetemplates/templates";
@@ -166,7 +166,7 @@ export default function Dashboard() {
                                 {features.map((feature, index) => (
                                     <Card
                                         key={index}
-                                        className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-white overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
+                                        className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 bg-white overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
                                         style={{ animationDelay: `${index * 100}ms` }}
                                         onClick={feature.action}
                                     >
@@ -214,6 +214,28 @@ export default function Dashboard() {
                 )
         }
     }
+
+
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    setActiveSection("dashboard")
+     window.scrollTo(0, 0);
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = 'Do you want to logOut? ' // shows default browser message
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
+
+
+
+
+
 
     return (
         <div className="min-h-screen bg-white">

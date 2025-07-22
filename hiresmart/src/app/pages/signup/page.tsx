@@ -156,7 +156,7 @@ export default function Signup() {
                     </div>
 
                     {/* Form Card */}
-                    <div className={` card-elegant p-8 border border-gray-300 rounded-2xl shadow-lg transition-all duration-1000 delay-500 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                    <div className={` card-elegant p-8 border border-gray-300 transition-all duration-1000 delay-500 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                         {/* Step 1: Email */}
                         {step === 1 && (
                             <div className="space-y-6 transition-all duration-500 ease-in-out">

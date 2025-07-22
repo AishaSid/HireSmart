@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input" 
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Download, Copy, RefreshCw } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface CoverLetterProps {
   onBack: () => void
@@ -135,9 +135,18 @@ Sincerely,
     )
   }
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+ 
+    const router = useRouter()
+    useEffect(() => {
+      window.history.pushState(null, '', window.location.href)
+      window.onpopstate = () => {
+        router.replace('/pages/dashboard')
+      }
+      window.scrollTo(0, 0);
+      return () => {
+        window.onpopstate = null
+      }
+    }, [])
 
   return (
     <div className="space-y-6">

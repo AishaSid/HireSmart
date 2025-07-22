@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Eye, Download, Star, Heart, Zap } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface ResumeTemplatesProps {
   onBack: () => void
@@ -190,9 +191,17 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     )
   }
 
-    useEffect(() => {
+  const router = useRouter()
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    window.onpopstate = () => {
+      router.replace('/pages/dashboard')
+    }
     window.scrollTo(0, 0);
-  }, []);
+    return () => {
+      window.onpopstate = null
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -232,7 +241,7 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
         {filteredTemplates.map((template, index) => (
           <Card
             key={template.id}
-            className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
+            className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
             style={{ animationDelay: `${index * 100}ms` }}
             onClick={() => setSelectedTemplate(template.id)}
           >

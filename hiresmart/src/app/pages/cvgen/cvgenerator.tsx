@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Plus, Trash2, Download, Eye } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Plus, Trash2, Download, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface CVGeneratorFormProps {
-  onBack: () => void
+  onBack: () => void;
 }
 
 export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
@@ -50,10 +57,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
         link: "",
       },
     ],
-  })
+  });
 
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const addExperience = () => {
     setFormData((prev) => ({
@@ -68,15 +75,15 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           description: "",
         },
       ],
-    }))
-  }
+    }));
+  };
 
   const removeExperience = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       experience: prev.experience.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const addEducation = () => {
     setFormData((prev) => ({
@@ -91,29 +98,40 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           gpa: "",
         },
       ],
-    }))
-  }
+    }));
+  };
+  const router = useRouter();
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = () => {
+      router.replace("/pages/dashboard");
+    };
+    window.scrollTo(0, 0);
+    return () => {
+      window.onpopstate = null;
+    };
+  }, []);
 
   const removeEducation = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       education: prev.education.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const addSkill = () => {
     setFormData((prev) => ({
       ...prev,
       skills: [...prev.skills, ""],
-    }))
-  }
+    }));
+  };
 
   const removeSkill = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       skills: prev.skills.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const addProject = () => {
     setFormData((prev) => ({
@@ -127,26 +145,33 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           link: "",
         },
       ],
-    }))
-  }
+    }));
+  };
 
   const removeProject = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       projects: prev.projects.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const handleGenerate = async () => {
-    setIsGenerating(true)
+    setIsGenerating(true);
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    setIsGenerating(false)
-    setShowPreview(true)
-  }
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setIsGenerating(false);
+    setShowPreview(true);
+  };
 
   // Custom animated input component
-  const AnimatedInput = ({ label, value, onChange, placeholder, type = "text", id }: any) => (
+  const AnimatedInput = ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    type = "text",
+    id,
+  }: any) => (
     <div className="relative">
       <Input
         id={id}
@@ -163,10 +188,17 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
         {label}
       </label>
     </div>
-  )
+  );
 
   // Custom animated textarea component
-  const AnimatedTextarea = ({ label, value, onChange, placeholder, rows = 4, id }: any) => (
+  const AnimatedTextarea = ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    rows = 4,
+    id,
+  }: any) => (
     <div className="relative">
       <Textarea
         id={id}
@@ -183,18 +215,25 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
         {label}
       </label>
     </div>
-  )
+  );
 
   if (showPreview) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setShowPreview(false)} className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => setShowPreview(false)}
+            className="flex items-center gap-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Form
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 bg-transparent"
+            >
               <Eye className="h-4 w-4" />
               Preview
             </Button>
@@ -211,7 +250,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
               {/* Resume Preview */}
               <div className="space-y-6">
                 <div className="text-center border-b pb-6">
-                  <h1 className="text-4xl font-bold text-gray-900">{formData.personalInfo.fullName || "Your Name"}</h1>
+                  <h1 className="text-4xl font-bold text-gray-900">
+                    {formData.personalInfo.fullName || "Your Name"}
+                  </h1>
                   <div className="flex flex-wrap justify-center gap-4 mt-2 text-lg text-gray-600">
                     <span>{formData.personalInfo.email}</span>
                     <span>{formData.personalInfo.phone}</span>
@@ -221,34 +262,56 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
 
                 {formData.summary && (
                   <div>
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-3">Professional Summary</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                      Professional Summary
+                    </h2>
                     <p className="text-lg text-gray-700">{formData.summary}</p>
                   </div>
                 )}
 
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-3">Experience</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                    Experience
+                  </h2>
                   <div className="space-y-4">
                     {formData.experience.map((exp, index) => (
-                      <div key={index} className="border-l-2 border-indigo-200 pl-4">
-                        <h3 className="text-lg font-semibold text-gray-900">{exp.position || "Position"}</h3>
-                        <p className="text-lg text-indigo-600">{exp.company || "Company"}</p>
+                      <div
+                        key={index}
+                        className="border-l-2 border-indigo-200 pl-4"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {exp.position || "Position"}
+                        </h3>
+                        <p className="text-lg text-indigo-600">
+                          {exp.company || "Company"}
+                        </p>
                         <p className="text-base text-gray-500">
                           {exp.startDate} - {exp.endDate}
                         </p>
-                        <p className="text-lg text-gray-700 mt-2">{exp.description}</p>
+                        <p className="text-lg text-gray-700 mt-2">
+                          {exp.description}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-3">Education</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                    Education
+                  </h2>
                   <div className="space-y-4">
                     {formData.education.map((edu, index) => (
-                      <div key={index} className="border-l-2 border-indigo-200 pl-4">
-                        <h3 className="text-lg font-semibold text-gray-900">{edu.degree || "Degree"}</h3>
-                        <p className="text-lg text-indigo-600">{edu.institution || "Institution"}</p>
+                      <div
+                        key={index}
+                        className="border-l-2 border-indigo-200 pl-4"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {edu.degree || "Degree"}
+                        </h3>
+                        <p className="text-lg text-indigo-600">
+                          {edu.institution || "Institution"}
+                        </p>
                         <p className="text-base text-gray-500">
                           {edu.startDate} - {edu.endDate}
                         </p>
@@ -258,12 +321,17 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-3">Skills</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                    Skills
+                  </h2>
                   <div className="flex flex-wrap gap-2">
                     {formData.skills
                       .filter((skill) => skill.trim())
                       .map((skill, index) => (
-                        <span key={index} className="bg-indigo-100 text-blue-500 px-3 py-1 rounded-full text-base">
+                        <span
+                          key={index}
+                          className="bg-indigo-100 text-blue-500 px-3 py-1 rounded-full text-base"
+                        >
                           {skill}
                         </span>
                       ))}
@@ -274,29 +342,39 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-    useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Button>
       </div>
-      <h1 className="text-6xl font-bold text-center mb-8 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Create Your CV</h1>
+      <h1 className="text-6xl font-bold text-center mb-8 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+        Create Your CV
+      </h1>
 
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Personal Information */}
         <Card className="animate-in slide-in-from-bottom-4 duration-500 border-2">
           <CardHeader>
-            <CardTitle className="text-2xl text-indigo-500">Personal Information</CardTitle>
-            <CardDescription className="text-lg">Basic details about yourself</CardDescription>
+            <CardTitle className="text-2xl text-indigo-500">
+              Personal Information
+            </CardTitle>
+            <CardDescription className="text-lg">
+              Basic details about yourself
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -307,7 +385,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setFormData((prev) => ({
                     ...prev,
-                    personalInfo: { ...prev.personalInfo, fullName: e.target.value },
+                    personalInfo: {
+                      ...prev.personalInfo,
+                      fullName: e.target.value,
+                    },
                   }))
                 }
               />
@@ -319,7 +400,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setFormData((prev) => ({
                     ...prev,
-                    personalInfo: { ...prev.personalInfo, email: e.target.value },
+                    personalInfo: {
+                      ...prev.personalInfo,
+                      email: e.target.value,
+                    },
                   }))
                 }
               />
@@ -330,7 +414,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setFormData((prev) => ({
                     ...prev,
-                    personalInfo: { ...prev.personalInfo, phone: e.target.value },
+                    personalInfo: {
+                      ...prev.personalInfo,
+                      phone: e.target.value,
+                    },
                   }))
                 }
               />
@@ -341,7 +428,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setFormData((prev) => ({
                     ...prev,
-                    personalInfo: { ...prev.personalInfo, location: e.target.value },
+                    personalInfo: {
+                      ...prev.personalInfo,
+                      location: e.target.value,
+                    },
                   }))
                 }
               />
@@ -352,15 +442,21 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
         {/* Professional Summary */}
         <Card className="animate-in slide-in-from-bottom-4 duration-500 border-2">
           <CardHeader>
-            <CardTitle className="text-2xl text-indigo-500">Professional Summary</CardTitle>
-            <CardDescription className="text-lg">Brief overview of your professional background</CardDescription>
+            <CardTitle className="text-2xl text-indigo-500">
+              Professional Summary
+            </CardTitle>
+            <CardDescription className="text-lg">
+              Brief overview of your professional background
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <AnimatedTextarea
               id="summary"
               label="Professional Summary"
               value={formData.summary}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((prev) => ({ ...prev, summary: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setFormData((prev) => ({ ...prev, summary: e.target.value }))
+              }
               rows={4}
             />
           </CardContent>
@@ -371,8 +467,12 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-2xl text-indigo-500">Work Experience</CardTitle>
-                <CardDescription className="text-lg">Your professional work history</CardDescription>
+                <CardTitle className="text-2xl text-indigo-500">
+                  Work Experience
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  Your professional work history
+                </CardDescription>
               </div>
               <Button
                 onClick={addExperience}
@@ -387,7 +487,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             {formData.experience.map((exp, index) => (
-              <div key={index} className="p-6 border-2 rounded-lg space-y-6 relative">
+              <div
+                key={index}
+                className="p-6 border-2 rounded-lg space-y-6 relative"
+              >
                 {formData.experience.length > 1 && (
                   <Button
                     onClick={() => removeExperience(index)}
@@ -404,9 +507,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     label="Company"
                     value={exp.company}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newExp = [...formData.experience]
-                      newExp[index].company = e.target.value
-                      setFormData((prev) => ({ ...prev, experience: newExp }))
+                      const newExp = [...formData.experience];
+                      newExp[index].company = e.target.value;
+                      setFormData((prev) => ({ ...prev, experience: newExp }));
                     }}
                   />
                   <AnimatedInput
@@ -414,9 +517,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     label="Position"
                     value={exp.position}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newExp = [...formData.experience]
-                      newExp[index].position = e.target.value
-                      setFormData((prev) => ({ ...prev, experience: newExp }))
+                      const newExp = [...formData.experience];
+                      newExp[index].position = e.target.value;
+                      setFormData((prev) => ({ ...prev, experience: newExp }));
                     }}
                   />
                   <AnimatedInput
@@ -425,9 +528,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     type="month"
                     value={exp.startDate}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newExp = [...formData.experience]
-                      newExp[index].startDate = e.target.value
-                      setFormData((prev) => ({ ...prev, experience: newExp }))
+                      const newExp = [...formData.experience];
+                      newExp[index].startDate = e.target.value;
+                      setFormData((prev) => ({ ...prev, experience: newExp }));
                     }}
                   />
                   <AnimatedInput
@@ -436,9 +539,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     type="month"
                     value={exp.endDate}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newExp = [...formData.experience]
-                      newExp[index].endDate = e.target.value
-                      setFormData((prev) => ({ ...prev, experience: newExp }))
+                      const newExp = [...formData.experience];
+                      newExp[index].endDate = e.target.value;
+                      setFormData((prev) => ({ ...prev, experience: newExp }));
                     }}
                   />
                 </div>
@@ -447,9 +550,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                   label="Job Description"
                   value={exp.description}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                    const newExp = [...formData.experience]
-                    newExp[index].description = e.target.value
-                    setFormData((prev) => ({ ...prev, experience: newExp }))
+                    const newExp = [...formData.experience];
+                    newExp[index].description = e.target.value;
+                    setFormData((prev) => ({ ...prev, experience: newExp }));
                   }}
                   rows={3}
                 />
@@ -463,8 +566,12 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-2xl text-indigo-500">Education</CardTitle>
-                <CardDescription className="text-lg">Your educational background</CardDescription>
+                <CardTitle className="text-2xl text-indigo-500">
+                  Education
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  Your educational background
+                </CardDescription>
               </div>
               <Button
                 onClick={addEducation}
@@ -479,7 +586,10 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             {formData.education.map((edu, index) => (
-              <div key={index} className="p-6 border-2 rounded-lg space-y-6 relative">
+              <div
+                key={index}
+                className="p-6 border-2 rounded-lg space-y-6 relative"
+              >
                 {formData.education.length > 1 && (
                   <Button
                     onClick={() => removeEducation(index)}
@@ -496,9 +606,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     label="Institution"
                     value={edu.institution}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newEdu = [...formData.education]
-                      newEdu[index].institution = e.target.value
-                      setFormData((prev) => ({ ...prev, education: newEdu }))
+                      const newEdu = [...formData.education];
+                      newEdu[index].institution = e.target.value;
+                      setFormData((prev) => ({ ...prev, education: newEdu }));
                     }}
                   />
                   <AnimatedInput
@@ -506,9 +616,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     label="Degree"
                     value={edu.degree}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newEdu = [...formData.education]
-                      newEdu[index].degree = e.target.value
-                      setFormData((prev) => ({ ...prev, education: newEdu }))
+                      const newEdu = [...formData.education];
+                      newEdu[index].degree = e.target.value;
+                      setFormData((prev) => ({ ...prev, education: newEdu }));
                     }}
                   />
                   <AnimatedInput
@@ -517,9 +627,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     type="month"
                     value={edu.startDate}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newEdu = [...formData.education]
-                      newEdu[index].startDate = e.target.value
-                      setFormData((prev) => ({ ...prev, education: newEdu }))
+                      const newEdu = [...formData.education];
+                      newEdu[index].startDate = e.target.value;
+                      setFormData((prev) => ({ ...prev, education: newEdu }));
                     }}
                   />
                   <AnimatedInput
@@ -528,9 +638,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     type="month"
                     value={edu.endDate}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newEdu = [...formData.education]
-                      newEdu[index].endDate = e.target.value
-                      setFormData((prev) => ({ ...prev, education: newEdu }))
+                      const newEdu = [...formData.education];
+                      newEdu[index].endDate = e.target.value;
+                      setFormData((prev) => ({ ...prev, education: newEdu }));
                     }}
                   />
                 </div>
@@ -544,10 +654,19 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-2xl text-indigo-500">Skills</CardTitle>
-                <CardDescription className="text-lg">Your technical and soft skills</CardDescription>
+                <CardTitle className="text-2xl text-indigo-500">
+                  Skills
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  Your technical and soft skills
+                </CardDescription>
               </div>
-              <Button onClick={addSkill} variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+              <Button
+                onClick={addSkill}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-transparent"
+              >
                 <Plus className="h-4 w-4" />
                 Add Skill
               </Button>
@@ -562,9 +681,9 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
                     label="Skill"
                     value={skill}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newSkills = [...formData.skills]
-                      newSkills[index] = e.target.value
-                      setFormData((prev) => ({ ...prev, skills: newSkills }))
+                      const newSkills = [...formData.skills];
+                      newSkills[index] = e.target.value;
+                      setFormData((prev) => ({ ...prev, skills: newSkills }));
                     }}
                   />
                   {formData.skills.length > 1 && (
@@ -603,7 +722,7 @@ export function CVGeneratorForm({ onBack }: CVGeneratorFormProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default CVGeneratorForm;

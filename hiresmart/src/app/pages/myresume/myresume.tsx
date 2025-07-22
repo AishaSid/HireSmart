@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, Eye, Edit, Trash2, Share, Copy, MoreHorizontal } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useRouter } from "next/navigation"
 
 interface MyResumesProps {
   onBack: () => void
@@ -187,9 +188,18 @@ export function MyResumes({ onBack }: MyResumesProps) {
       </div>
     )
   }
-    useEffect(() => {
+  
+    const router = useRouter()
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    window.onpopstate = () => {
+      router.replace('/pages/dashboard')
+    }
     window.scrollTo(0, 0);
-  }, []);
+    return () => {
+      window.onpopstate = null
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -266,7 +276,7 @@ export function MyResumes({ onBack }: MyResumesProps) {
         {resumes.map((resume, index) => (
           <Card
             key={resume.id}
-            className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
+            className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
             style={{ animationDelay: `${index * 100}ms` }}
             onClick={() => setSelectedResume(resume.id)}
           >
