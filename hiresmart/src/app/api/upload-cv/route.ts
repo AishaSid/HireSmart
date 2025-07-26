@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import mongoose from 'mongoose'
-import { Readable } from 'stream'
+
 
 // MongoDB model
 const CVSchema = new mongoose.Schema({
@@ -10,7 +10,7 @@ const CVSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 })
 
-const CV = mongoose.models.CV || mongoose.model('Cv', CVSchema)
+const CV = mongoose.models.Cv || mongoose.model('Cv', CVSchema)
 
 // Connect to MongoDB
 async function connectMongo() {
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
     await newCV.save()
 
     return NextResponse.json({ success: true, message: 'CV uploaded' })
-  } catch (err) {
+  } catch (err: any) {
+    console.error('Upload error:', err.message || err)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }

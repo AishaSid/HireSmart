@@ -24,7 +24,7 @@ export default function Signup() {
     }
     setEmailError("");
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("user")
       .select("*")
       .eq("email", email)
@@ -61,8 +61,10 @@ export default function Signup() {
       setTimeout(() => {
         if (data && data.id) {
           localStorage.setItem("user_id", data.id); // save for later use
+          var v = true;
           if (resume) {
             cvUpload(resume, data.id);
+            v = false; 
           }
           router.push("/pages/dashboard");
         }
@@ -525,7 +527,7 @@ export default function Signup() {
                         </span>
                       </label>
                       <p className="text-xs text-gray-700 mt-2">
-                        PDF, DOC, DOCX only, max 10MB
+                        PDF, DOC, DOCX only, max 5MB
                       </p>
                     </div>
                   )}
@@ -553,14 +555,14 @@ export default function Signup() {
                   </button>
                   <button
                     onClick={handleFinalSubmit}
-                    className="flex-1 py-4 bg-white/30 backdrop-blur-sm  text-lg font-semibold rounded-lg transition-all duration-300 hover:bg-white/40"
+                    className="flex-1 py-4 bg-white/30 backdrop-blur-sm  text-lg font-semibold rounded-lg transition-all duration-300 hover:bg-white/40 hover:underline hover:text-blue-500"
                   >
                     Skip for now
                   </button>
                   <button
                     onClick={handleFinalSubmit}
                     disabled={!resume}
-                    className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700  text-lg font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                    className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700  text-lg font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-white"
                   >
                     Complete
                     <svg
