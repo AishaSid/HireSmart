@@ -1,67 +1,12 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as mammoth from "mammoth";
-import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type PDFPageProxy } from 'pdfjs-dist';
-
-// Configure PDF.js worker
-GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+import { GoogleGenerativeAI, type Part } from "@google/generative-ai";
 
 interface ATSAnalysis {
   score: number;
   missingKeywords: string[];
+  foundKeywords: string[];
   formattingIssues: string[];
   optimizationSuggestions: string[];
   strengths: string[];
-}
-
-/**
- * Extract text from PDF files using pdfjs-dist
- * @param arrayBuffer - PDF file contents as ArrayBuffer
- * @returns Extracted text
- */
-async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
-  try {
-    const pdf: PDFDocumentProxy = await getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-    let text = '';
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page: PDFPageProxy = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map((item: any) => item.str).join(' ') + '\n';
-    }
-    
-    return text;
-  } catch (error) {
-    console.error("PDF extraction error:", error);
-    throw new Error("Failed to extract text from PDF");
-  }
-}
-
-/**
- * Extract text from various file types
- * @param file - Uploaded file
- * @returns Extracted text
- */
-export async function extractTextFromFile(file: File): Promise<string> {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    
-    if (file.type === 'application/pdf') {
-      return await extractTextFromPDF(arrayBuffer);
-    } 
-    else if (
-      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-      file.type === 'application/msword'
-    ) {
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      return result.value;
-    }
-    else {
-      throw new Error('Unsupported file type');
-    }
-  } catch (error: any) {
-    console.error("Text extraction error:", error);
-    throw new Error(`Failed to extract text: ${error.message}`);
-  }
 }
 
 /**
@@ -78,49 +23,70 @@ export async function analyzeResume(file: File, jobDescription: string): Promise
     }
     
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    // Extract text from resume
-    const resumeText = await extractTextFromFile(file);
-    console.log(`Extracted text (${resumeText.length} characters)`);
-
-    // Construct prompt for Gemini
-    const prompt = `
-Analyze this resume for ATS compatibility with this job description.
-Provide output in strict JSON format only:
-
-JOB DESCRIPTION:
-${jobDescription}
-
-RESUME CONTENT:
-${resumeText}
-
-REQUIRED JSON STRUCTURE:
-{
-  "score": number (0-100),
-  "missingKeywords": string[] (top 5-10 missing keywords),
-  "formattingIssues": string[] (3-5 major formatting issues),
-  "optimizationSuggestions": string[] (5-7 actionable suggestions),
-  "strengths": string[] (3-5 resume strengths)
-}
-`;
-
-    // Call Gemini API
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
       generationConfig: {
         temperature: 0.2,
         responseMimeType: "application/json",
       },
     });
 
+    // Convert file to Google Generative AI format
+    const fileArrayBuffer = await file.arrayBuffer();
+    const fileBase64 = Buffer.from(fileArrayBuffer).toString('base64');
+    
+    // Create parts for Gemini
+    const filePart: Part = {
+      inlineData: {
+        mimeType: file.type,
+        data: fileBase64
+      }
+    };
+    
+    const promptPart: Part = {
+      text: `
+You are an expert ATS (Applicant Tracking System) analyzer. 
+Perform a comprehensive analysis of this resume against the provided job description.
+
+JOB DESCRIPTION:
+${jobDescription}
+
+ANALYSIS REQUIREMENTS:
+1. Calculate an ATS compatibility score (0-100)
+2. Identify keywords:
+   - List the top 10-15 most important keywords found in the resume
+   - List the top 10 most critical missing keywords from the job description
+3. Identify 3-5 major formatting issues
+4. Provide 5-7 actionable optimization suggestions
+5. Highlight 3-5 key strengths of the resume
+
+OUTPUT FORMAT (JSON ONLY):
+{
+  "score": number,
+  "foundKeywords": string[],
+  "missingKeywords": string[],
+  "formattingIssues": string[],
+  "optimizationSuggestions": string[],
+  "strengths": string[]
+}
+`
+    };
+
+    // Call Gemini API with the file and text prompt
+    const result = await model.generateContent({
+      contents: [{
+        role: "user",
+        parts: [promptPart, filePart]
+      }]
+    });
+
     let responseText = result.response.text();
     console.log("Raw Gemini response:", responseText);
     
-    // Clean Gemini response (sometimes adds markdown)
+    // Clean Gemini response
     responseText = responseText.replace(/```json|```/g, '').trim();
     
-    // Handle cases where Gemini adds extra text
+    // Extract JSON from response
     const jsonStart = responseText.indexOf('{');
     const jsonEnd = responseText.lastIndexOf('}') + 1;
     if (jsonStart !== -1 && jsonEnd !== -1) {
@@ -131,7 +97,15 @@ REQUIRED JSON STRUCTURE:
     const analysis = JSON.parse(responseText);
     
     // Validate response structure
-    const requiredKeys = ['score', 'missingKeywords', 'formattingIssues', 'optimizationSuggestions', 'strengths'];
+    const requiredKeys = [
+      'score', 
+      'foundKeywords', 
+      'missingKeywords', 
+      'formattingIssues', 
+      'optimizationSuggestions', 
+      'strengths'
+    ];
+    
     for (const key of requiredKeys) {
       if (!(key in analysis)) {
         throw new Error(`Invalid analysis format: Missing ${key} property`);

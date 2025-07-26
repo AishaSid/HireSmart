@@ -113,7 +113,7 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
             <ArrowLeft className="h-4 w-4" />
             Analyze Another Resume
           </Button>
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Button variant="outline" className="flex items-center gap-2 bg-transparent">
               <Zap className="h-4 w-4" />
               Auto-Optimize
@@ -122,7 +122,7 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
               <Download className="h-4 w-4" />
               Download Optimized
             </Button>
-          </div>
+          </div> */}
         </div>
 
         <div className="max-w-6xl mx-auto space-y-6">
@@ -256,7 +256,7 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
         </Button>
       </div>
       <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-        ATS Optimizer
+        ATS Analyzer
       </h1>
 
       <div className="max-w-4xl mx-auto space-y-8">

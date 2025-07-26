@@ -61,7 +61,7 @@ export default function Dashboard() {
         },
         {
             icon: CheckCircle,
-            title: "ATS Optimization",
+            title: "ATS Analysis",
             description: "Optimize your CV for Applicant Tracking Systems",
             color: "from-emerald-400 to-emerald-500",
             action: () => setActiveSection("ats-optimizer"),
