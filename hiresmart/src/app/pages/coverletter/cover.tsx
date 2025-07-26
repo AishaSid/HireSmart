@@ -8,11 +8,103 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Download, Copy, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+// Moved outside to prevent re-render issues
+const AnimatedInput = ({ 
+  label, 
+  value, 
+  onChange, 
+  id,
+  type = "text"
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  id: string;
+  type?: string;
+}) => (
+  <div className="relative">
+    <Input
+      id={id}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder=" "
+      className="h-14 text-lg border-2 peer placeholder-transparent hover:shadow-lg hover:shadow-blue-400 focus:shadow-lg focus:shadow-indigo-400 focus:border-blue-500 focus:border-2"
+    />
+    <label
+      htmlFor={id}
+      className="absolute left-3 top-4 text-lg text-gray-600 transition-all duration-200
+        peer-placeholder-shown:top-4
+        peer-placeholder-shown:text-lg
+        peer-placeholder-shown:text-gray-400
+        peer-focus:-top-2
+        peer-focus:text-sm
+        peer-focus:text-indigo-600
+        peer-focus:bg-white
+        peer-focus:px-1
+        peer-[:not(:placeholder-shown)]:-top-2
+        peer-[:not(:placeholder-shown)]:text-sm
+        peer-[:not(:placeholder-shown)]:text-indigo-600
+        peer-[:not(:placeholder-shown)]:bg-white
+        peer-[:not(:placeholder-shown)]:px-1
+      "
+    >
+      {label}
+    </label>
+  </div>
+)
+
+const AnimatedTextarea = ({ 
+  label, 
+  value, 
+  onChange, 
+  id,
+  rows = 4
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  id: string;
+  rows?: number;
+}) => (
+  <div className="relative">
+    <Textarea
+      id={id}
+      value={value}
+      onChange={onChange}
+      placeholder=" "
+      rows={rows}
+      className="min-h-20 text-lg border-2 border-transparent peer placeholder-transparent resize-none hover:shadow-lg hover:shadow-blue-400 focus:shadow-lg focus:shadow-indigo-400 focus:border-blue-500 focus:border-2"
+    />
+    <label
+      htmlFor={id}
+      className="absolute left-3 top-6 text-lg text-gray-600 transition-all duration-200
+        peer-placeholder-shown:top-6
+        peer-placeholder-shown:text-lg
+        peer-placeholder-shown:text-gray-400
+        peer-focus:-top-2
+        peer-focus:text-sm
+        peer-focus:text-indigo-600
+        peer-focus:bg-white
+        peer-focus:px-1
+        peer-[:not(:placeholder-shown)]:-top-2
+        peer-[:not(:placeholder-shown)]:text-sm
+        peer-[:not(:placeholder-shown)]:text-indigo-600
+        peer-[:not(:placeholder-shown)]:bg-white
+        peer-[:not(:placeholder-shown)]:px-1
+      "
+    >
+      {label}
+    </label>
+  </div>
+)
+
 interface CoverLetterProps {
   onBack: () => void
 }
 
 export function CoverLetter({ onBack }: CoverLetterProps) {
+  const router = useRouter(); // Moved to the top
   const [formData, setFormData] = useState({
     jobTitle: "",
     companyName: "",
@@ -27,68 +119,56 @@ export function CoverLetter({ onBack }: CoverLetterProps) {
   const [generatedLetter, setGeneratedLetter] = useState("")
   const [showPreview, setShowPreview] = useState(false)
 
-  // Custom animated input component
-  const AnimatedInput = ({ label, value, onChange, placeholder, type = "text", id }: any) => (
-    <div className="relative">
-      <Input
-        id={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder=" "
-        className="h-14 text-lg border-2 peer placeholder-transparent hover:shadow-lg hover:shadow-blue-400 focus:shadow-lg focus:shadow-indigo-400 focus:border-blue-500 focus:border-2"
-      />
-      <label
-        htmlFor={id}
-        className="absolute left-3 text-lg text-gray-600 transition-all duration-200 transform -translate-y-1/2 top-1/2 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-lg peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:text-sm peer-focus:text-indigo-600 peer-focus:bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:text-indigo-600 peer-[:not(:placeholder-shown)]:bg-white peer-[:not(:placeholder-shown)]:px-1"
-      >
-        {label}
-      </label>
-    </div>
-  )
-
-  // Custom animated textarea component
-  const AnimatedTextarea = ({ label, value, onChange, placeholder, rows = 4, id }: any) => (
-    <div className="relative">
-      <Textarea
-        id={id}
-        value={value}
-        onChange={onChange}
-        placeholder=" "
-        rows={rows}
-        className="min-h-20 text-lg border-2 border-transparent peer placeholder-transparent resize-none hover:shadow-lg hover:shadow-blue-400 focus:shadow-lg focus:shadow-indigo-400 focus:border-blue-500 focus:border-2"
-      />
-      <label
-        htmlFor={id}
-        className="absolute left-3 text-lg text-gray-600 transition-all duration-200 transform -translate-y-1/2 top-6 peer-placeholder-shown:top-6 peer-placeholder-shown:text-lg peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:text-sm peer-focus:text-indigo-600 peer-focus:bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:text-indigo-600 peer-[:not(:placeholder-shown)]:bg-white peer-[:not(:placeholder-shown)]:px-1"
-      >
-        {label}
-      </label>
-    </div>
-  )
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    window.onpopstate = () => {
+      router.replace('/pages/dashboard')
+    }
+    window.scrollTo(0, 0);
+    return () => {
+      window.onpopstate = null
+    }
+  }, [router])
 
   const handleGenerate = async () => {
-    setIsGenerating(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    setIsGenerating(true);
+    
+    try {
+      const response = await fetch("/api/generate-cover-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
 
-    const sampleLetter = `Dear ${formData.hiringManager || "Hiring Manager"},
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Generation failed");
+      }
 
-I am writing to express my strong interest in the ${formData.jobTitle || "Software Engineer"} position at ${formData.companyName || "your company"}. With my extensive background in software development and passion for creating innovative solutions, I am confident that I would be a valuable addition to your team.
+      setGeneratedLetter(data.generatedLetter);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Error generating cover letter. Using fallback.");
+      // Enhanced fallback sample letter
+      setGeneratedLetter(`Dear ${formData.hiringManager || "Hiring Manager"},
 
-In my previous roles, I have developed expertise in ${formData.keySkills || "various technologies"} and have successfully ${formData.experience || "delivered multiple projects"}. I am particularly drawn to this opportunity because of your company's commitment to innovation and excellence in the technology sector.
+I am writing to express my strong interest in the ${formData.jobTitle || "Software Engineer"} position at ${formData.companyName || "your company"}. With my extensive background and passion for creating innovative solutions, I am confident that I would be a valuable addition to your team.
 
-The job description mentions requirements that align perfectly with my skill set. I have hands-on experience with the technologies and methodologies mentioned, and I am excited about the possibility of contributing to your team's continued success.
+In my previous roles, I have developed expertise in ${formData.keySkills || "various technologies"} and have successfully ${formData.experience || "delivered multiple projects"}. I am particularly drawn to this opportunity because of your company's commitment to innovation and excellence.
+
+${formData.jobDescription ? `I've reviewed the job description and note that you're seeking someone with: 
+${formData.jobDescription.substring(0, 200)}...` : "The position requirements align perfectly with my skill set."}
 
 I would welcome the opportunity to discuss how my background and enthusiasm can contribute to ${formData.companyName || "your company"}'s goals. Thank you for considering my application. I look forward to hearing from you soon.
 
 Sincerely,
-[Your Name]`
-
-    setGeneratedLetter(sampleLetter)
-    setIsGenerating(false)
-    setShowPreview(true)
-  }
+[Your Name]`);
+    } finally {
+      setIsGenerating(false);
+      setShowPreview(true);
+    }
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedLetter)
@@ -134,19 +214,6 @@ Sincerely,
       </div>
     )
   }
-
- 
-    const router = useRouter()
-    useEffect(() => {
-      window.history.pushState(null, '', window.location.href)
-      window.onpopstate = () => {
-        router.replace('/pages/dashboard')
-      }
-      window.scrollTo(0, 0);
-      return () => {
-        window.onpopstate = null
-      }
-    }, [])
 
   return (
     <div className="space-y-6">

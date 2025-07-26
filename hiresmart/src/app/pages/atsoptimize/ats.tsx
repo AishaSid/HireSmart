@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Upload, CheckCircle, AlertTriangle, XCircle, Download, Zap, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
