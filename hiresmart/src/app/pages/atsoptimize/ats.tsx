@@ -1,24 +1,44 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Upload, CheckCircle, AlertTriangle, XCircle, Download, Zap } from "lucide-react"
+import { ArrowLeft, Upload, CheckCircle, AlertTriangle, XCircle, Download, Zap, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface ATSOptimizerProps {
   onBack: () => void
 }
 
+interface ATSAnalysis {
+  score: number
+  missingKeywords: string[]
+  formattingIssues: string[]
+  optimizationSuggestions: string[]
+  strengths: string[]
+}
+
 export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [jobDescription, setJobDescription] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [atsScore, setAtsScore] = useState(0)
+  const [analysisError, setAnalysisError] = useState("")
+  const [analysisResults, setAnalysisResults] = useState<ATSAnalysis | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    window.onpopstate = () => {
+      router.replace('/pages/dashboard')
+    }
+    window.scrollTo(0, 0)
+    return () => {
+      window.onpopstate = null
+    }
+  }, [])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -28,48 +48,52 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
   }
 
   const handleAnalyze = async () => {
-    if (!uploadedFile) return
+    setAnalysisError("")
+    setAnalysisComplete(false)
+    
+    if (!uploadedFile) {
+      setAnalysisError("Please upload a resume file")
+      return
+    }
+
+    if (!jobDescription || jobDescription.trim().length < 15) {
+      setAnalysisError("Job description must be at least 15 characters")
+      return
+    }
 
     setIsAnalyzing(true)
-    // Simulate analysis
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    setAtsScore(78)
-    setIsAnalyzing(false)
-    setAnalysisComplete(true)
-  }
 
-  const analysisResults = {
-    score: atsScore,
-    issues: [
-      {
-        type: "critical",
-        title: "Missing Keywords",
-        description: "Your resume lacks important keywords from the job description",
-        suggestions: ["Add 'React', 'Node.js', 'Agile' to your skills section"],
-      },
-      {
-        type: "warning",
-        title: "Formatting Issues",
-        description: "Some formatting elements may not be ATS-friendly",
-        suggestions: ["Use standard section headers", "Avoid complex tables"],
-      },
-      {
-        type: "info",
-        title: "Contact Information",
-        description: "Consider adding LinkedIn profile URL",
-        suggestions: ["Add LinkedIn profile to contact section"],
-      },
-    ],
-    strengths: [
-      "Clear section headers",
-      "Consistent formatting",
-      "Appropriate length (2 pages)",
-      "Professional email address",
-    ],
-    keywords: {
-      found: ["JavaScript", "Python", "Git", "SQL", "Project Management"],
-      missing: ["React", "Node.js", "Agile", "Scrum", "AWS"],
-    },
+    try {
+      const formData = new FormData()
+      formData.append("file", uploadedFile)
+      formData.append("jobDescription", jobDescription)
+
+      const response = await fetch("/api/Ats_analyze", {
+        method: "POST",
+        body: formData,
+      })
+
+      // Check for JSON response
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        throw new Error(`Server error: ${response.status} - ${text.slice(0, 100)}`)
+      }
+
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Analysis failed")
+      }
+
+      setAnalysisResults(result.data)
+      setAnalysisComplete(true)
+    } catch (error: any) {
+      console.error("Analysis error:", error)
+      setAnalysisError(error.message || "Failed to analyze resume")
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   const getScoreColor = (score: number) => {
@@ -78,17 +102,14 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
     return "text-red-600"
   }
 
-  const getScoreBackground = (score: number) => {
-    if (score >= 80) return "from-green-500 to-green-600"
-    if (score >= 60) return "from-yellow-500 to-yellow-600"
-    return "from-red-500 to-red-600"
-  }
-
-  if (analysisComplete) {
+  if (analysisComplete && analysisResults) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setAnalysisComplete(false)} className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => {
+            setAnalysisComplete(false)
+            setAnalysisResults(null)
+          }} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Analyze Another Resume
           </Button>
@@ -134,44 +155,21 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
           </Card>
 
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Issues & Recommendations */}
+            {/* Formatting Issues */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl text-red-600">Issues & Recommendations</CardTitle>
+                <CardTitle className="text-2xl text-yellow-600">Formatting Issues</CardTitle>
                 <CardDescription>Areas that need attention for better ATS compatibility</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {analysisResults.issues.map((issue, index) => (
+                {analysisResults.formattingIssues.map((issue, index) => (
                   <div key={index} className="p-4 border rounded-lg">
                     <div className="flex items-start gap-3">
                       <div className="mt-1">
-                        {issue.type === "critical" && <XCircle className="h-5 w-5 text-red-500" />}
-                        {issue.type === "warning" && <AlertTriangle className="h-5 w-5 text-yellow-500" />}
-                        {issue.type === "info" && <CheckCircle className="h-5 w-5 text-blue-500" />}
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-gray-900">{issue.title}</h4>
-                          <Badge
-                            variant={
-                              issue.type === "critical"
-                                ? "destructive"
-                                : issue.type === "warning"
-                                  ? "secondary"
-                                  : "default"
-                            }
-                          >
-                            {issue.type}
-                          </Badge>
-                        </div>
-                        <p className="text-gray-600 text-sm mb-2">{issue.description}</p>
-                        <div className="space-y-1">
-                          {issue.suggestions.map((suggestion, idx) => (
-                            <div key={idx} className="text-sm text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                              💡 {suggestion}
-                            </div>
-                          ))}
-                        </div>
+                        <p className="text-gray-600">{issue}</p>
                       </div>
                     </div>
                   </div>
@@ -202,30 +200,17 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl text-indigo-500">Keywords Analysis</CardTitle>
-              <CardDescription>Comparison of keywords in your resume vs. job requirements</CardDescription>
+              <CardDescription>Missing keywords from the job description</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-green-600 mb-3 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Found Keywords ({analysisResults.keywords.found.length})
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {analysisResults.keywords.found.map((keyword, index) => (
-                      <Badge key={index} className="bg-green-100 text-green-800">
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+              <div className="space-y-4">
                 <div>
                   <h4 className="font-semibold text-red-600 mb-3 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
-                    Missing Keywords ({analysisResults.keywords.missing.length})
+                    Missing Keywords ({analysisResults.missingKeywords.length})
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {analysisResults.keywords.missing.map((keyword, index) => (
+                    {analysisResults.missingKeywords.map((keyword, index) => (
                       <Badge key={index} className="bg-red-100 text-red-800">
                         {keyword}
                       </Badge>
@@ -236,50 +221,31 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
             </CardContent>
           </Card>
 
-          {/* Score Breakdown */}
+          {/* Optimization Suggestions */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-indigo-500">Score Breakdown</CardTitle>
-              <CardDescription>Detailed analysis of different aspects</CardDescription>
+              <CardTitle className="text-2xl text-blue-600">Optimization Suggestions</CardTitle>
+              <CardDescription>Actionable tips to improve your resume</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { category: "Keywords Match", score: 65, max: 100 },
-                  { category: "Formatting", score: 85, max: 100 },
-                  { category: "Section Structure", score: 90, max: 100 },
-                  { category: "Contact Information", score: 75, max: 100 },
-                ].map((item, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{item.category}</span>
-                      <span className={getScoreColor(item.score)}>
-                        {item.score}/{item.max}
-                      </span>
+            <CardContent className="space-y-4">
+              {analysisResults.optimizationSuggestions.map((suggestion, index) => (
+                <div key={index} className="p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1">
+                      <Zap className="h-5 w-5 text-blue-500" />
                     </div>
-                    <Progress value={item.score} className="h-2" />
+                    <div className="flex-1">
+                      <p className="text-gray-600">{suggestion}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
       </div>
     )
   }
-
-  const router = useRouter()
-  useEffect(() => {
-    window.history.pushState(null, '', window.location.href)
-    window.onpopstate = () => {
-      router.replace('/pages/dashboard')
-    }
-    window.scrollTo(0, 0);
-    return () => {
-      window.onpopstate = null
-    }
-  }, [])
-
 
   return (
     <div className="space-y-6">
@@ -290,8 +256,8 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
         </Button>
       </div>
       <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-          ATS Optimizer
-        </h1>
+        ATS Optimizer
+      </h1>
 
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Upload Section */}
@@ -305,6 +271,24 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
               <p className="text-gray-600 mb-8">
                 Upload your resume to get a comprehensive ATS compatibility analysis and optimization suggestions
               </p>
+
+              {/* Job Description Input */}
+              <div className="space-y-4 mb-6">
+                <label htmlFor="jobDescription" className="block text-sm font-medium text-gray-700">
+                  Job Description
+                </label>
+                <textarea
+                  id="jobDescription"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Paste the job description you're applying for..."
+                  className="min-h-[150px] w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                />
+                <p className="text-sm text-gray-500">
+                  Provide the job description for targeted ATS analysis (minimum 15 characters)
+                </p>
+              </div>
 
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-indigo-400 transition-colors">
                 <input
@@ -334,16 +318,26 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
                 </div>
               )}
 
+              {/* Error Display */}
+              {analysisError && (
+                <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="flex items-center gap-2 text-red-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>{analysisError}</span>
+                  </div>
+                </div>
+              )}
+
               {uploadedFile && (
                 <Button
                   onClick={handleAnalyze}
-                  disabled={isAnalyzing}
+                  disabled={isAnalyzing || jobDescription.trim().length < 15}
                   size="lg"
-                  className="mt-6 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 px-8"
+                  className="mt-6 w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 text-white"
                 >
                   {isAnalyzing ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       Analyzing Resume...
                     </div>
                   ) : (
@@ -424,6 +418,5 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
     </div>
   )
 }
-
 
 export default ATSOptimizer;

@@ -24,18 +24,21 @@ export default function Signup() {
     }
     setEmailError("");
 
-    const { data } = await supabase
+     const { data: existingUser } = await supabase
       .from("user")
-      .select("*")
+      .select("id")
       .eq("email", email)
       .maybeSingle();
 
-    if (data) {
-      if (data && data.id) {
-        localStorage.setItem("user_id", data.id); // save for later use
-        router.push("/pages/dashboard");
-      }
-    } else {
+    if (existingUser) {
+      setSignupStatus({ 
+        success: false, 
+        message: "User already exists. Redirecting to dashboard..." 
+      });
+      localStorage.setItem("user_id", existingUser.id);
+      return router.push("/pages/dashboard");
+    }
+     else {
       setStep(2);
     }
   };
@@ -45,55 +48,87 @@ export default function Signup() {
     message: string;
   } | null>(null);
 
-  const handleFinalSubmit = async () => {
-    const { error } = await supabase.from("user").insert({
-      email,
-      first_name: name,
-    });
-    const { data } = await supabase
+ const handleFinalSubmit = async () => {
+  try {
+    // First check again if user exists (race condition protection)
+    const { data: existingUser } = await supabase
       .from("user")
       .select("id")
       .eq("email", email)
       .maybeSingle();
 
-    if (!error) {
-      setSignupStatus({ success: true, message: "Signup Successful" });
-      setTimeout(() => {
-        if (data && data.id) {
-          localStorage.setItem("user_id", data.id); // save for later use
-          var v = true;
-          if (resume) {
-            cvUpload(resume, data.id);
-            v = false; 
-          }
-          router.push("/pages/dashboard");
-        }
-      }, 1500);
-    } else {
-      setSignupStatus({
-        success: false,
-        message: error.message || "Signup failed. Please try again.",
+    if (existingUser) {
+      setSignupStatus({ 
+        success: false, 
+        message: "User already exists. Redirecting to dashboard..." 
       });
+      localStorage.setItem("user_id", existingUser.id);
+      return router.push("/pages/dashboard");
     }
-  };
 
-  const cvUpload = async (resume: File, userId: string) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", resume);
-      formData.append("user_id", userId);
+    // Create new user
+    const { data: newUser, error: userError } = await supabase
+      .from("user")
+      .insert({
+        email,
+        first_name: name,
+      })
+      .select("id")
+      .single();
 
-      const response = await fetch("/api/upload-cv", {
-        method: "POST",
-        body: formData,
+    if (userError) throw userError;
+
+    // Upload CV if provided
+    if (resume && newUser?.id) {
+      setSignupStatus({ 
+        success: true, 
+        message: "Uploading your CV..." 
       });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, message: "Upload error" };
+      
+      const uploadResult = await cvUpload(resume, newUser.id);
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.message || "CV upload failed");
+      }
     }
-  };
+
+    // Complete signup
+    setSignupStatus({ 
+      success: true, 
+      message: "Signup Successful" 
+    });
+    
+    localStorage.setItem("user_id", newUser.id);
+    router.push("/pages/dashboard");
+  } catch (error: any) {
+    setSignupStatus({
+      success: false,
+      message: error.message || "Signup failed. Please try again.",
+    });
+  }
+};
+
+
+const cvUpload = async (resume: File, userId: string) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", resume);
+    formData.append("user_id", userId);
+
+    const response = await fetch("/api/upload-cv", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Upload failed with status " + response.status);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error("Upload error:", error);
+    return { success: false, message: error.message || "Upload error" };
+  }
+};
 
   const handleFileChange = (file: File) => {
     if (
