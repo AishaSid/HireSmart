@@ -14,6 +14,7 @@ interface ATSOptimizerProps {
 
 interface ATSAnalysis {
   score: number
+  foundKeywords: string[]
   missingKeywords: string[]
   formattingIssues: string[]
   optimizationSuggestions: string[]
@@ -74,8 +75,8 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
       })
 
       // Check for JSON response
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
+      const contentType = response.headers.get("content-type") || ""
+      if (!contentType.includes("application/json")) {
         const text = await response.text()
         throw new Error(`Server error: ${response.status} - ${text.slice(0, 100)}`)
       }
@@ -113,7 +114,7 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
             <ArrowLeft className="h-4 w-4" />
             Analyze Another Resume
           </Button>
-          {/* <div className="flex gap-2">
+          <div className="flex gap-2">
             <Button variant="outline" className="flex items-center gap-2 bg-transparent">
               <Zap className="h-4 w-4" />
               Auto-Optimize
@@ -122,7 +123,7 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
               <Download className="h-4 w-4" />
               Download Optimized
             </Button>
-          </div> */}
+          </div>
         </div>
 
         <div className="max-w-6xl mx-auto space-y-6">
@@ -200,10 +201,23 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl text-indigo-500">Keywords Analysis</CardTitle>
-              <CardDescription>Missing keywords from the job description</CardDescription>
+              <CardDescription>Keywords found and missing in your resume</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-green-600 mb-3 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Found Keywords ({analysisResults.foundKeywords.length})
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {analysisResults.foundKeywords.map((keyword, index) => (
+                      <Badge key={index} className="bg-green-100 text-green-800">
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
                 <div>
                   <h4 className="font-semibold text-red-600 mb-3 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
@@ -256,7 +270,7 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
         </Button>
       </div>
       <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-        ATS Analyzer
+        ATS Optimizer
       </h1>
 
       <div className="max-w-4xl mx-auto space-y-8">
@@ -362,8 +376,8 @@ export function ATSOptimizer({ onBack }: ATSOptimizerProps) {
             },
             {
               icon: AlertTriangle,
-              title: "Issue Detection",
-              description: "Identify formatting and content issues that could prevent your resume from being seen",
+              title: "Keyword Analysis",
+              description: "Identify found and missing keywords critical for the job description",
             },
             {
               icon: Zap,
