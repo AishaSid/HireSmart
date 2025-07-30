@@ -8,7 +8,7 @@ const DEFAULT_TEMPLATES = [
     name: "Modern Professional",
     category: "modern",
     description: "Clean layout perfect for tech jobs",
-    imageUrl: "/template-modern.jpg",
+    imageUrl: "/templates/modern.jpg",
     htmlContent: `<!DOCTYPE html>
 <html>
 <head>
