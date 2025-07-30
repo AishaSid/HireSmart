@@ -20,12 +20,16 @@ const DEFAULT_TEMPLATES = [
     .section { margin-bottom: 20px; }
     .job { margin-bottom: 15px; }
     .date { color: #7f8c8d; font-style: italic; }
+    .contact-info { white-space: nowrap; }
+    .contact-info span { margin: 0 8px; }
+    .contact-info span:first-child { margin-left: 0; }
+    .contact-info span:last-child { margin-right: 0; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>{{name}}</h1>
-    <p>{{title}} • {{email}} • {{phone}} • {{location}}</p>
+    <p class="contact-info"><span>{{title}}</span><span>•</span><span>{{email}}</span><span>•</span><span>{{phone}}</span><span>•</span><span>{{location}}</span></p>
   </div>
   
   <div class="section">
@@ -38,7 +42,7 @@ const DEFAULT_TEMPLATES = [
     {{#each experience}}
     <div class="job">
       <h3>{{position}}</h3>
-      <p>{{company}} • <span class="date">{{startDate}} - {{endDate}}</span></p>
+      <p class="contact-info"><span>{{company}}</span><span>•</span><span class="date">{{startDate}} - {{endDate}}</span></p>
       <ul>
         {{#each bullets}}
         <li>{{this}}</li>

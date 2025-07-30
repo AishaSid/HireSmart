@@ -47,8 +47,13 @@ export async function POST(req: Request) {
 Convert the attached resume into a professional HTML resume.
 Style: ${template.description}, ${template.style}.
 User commands: ${commands || "None"}.
-Return only a complete valid HTML document with <html> and <body> tags.
-No explanation or backticks.
+
+IMPORTANT: 
+- Return only a complete valid HTML document with <html> and <body> tags
+- Do not add extra line breaks or spacing around bullet points (•)
+- Keep contact information on single lines with proper spacing
+- No explanation or backticks
+- Ensure clean, professional formatting
               `
             }
           ]
@@ -61,6 +66,16 @@ No explanation or backticks.
 
     // Remove markdown/code fencing if still present
     generatedResume = generatedResume.replace(/```html\n?/g, '').replace(/```/g, '').trim();
+
+    // Clean up extra line breaks around bullet points and contact info
+    generatedResume = generatedResume
+      .replace(/\s*\n\s*•\s*\n\s*/g, ' • ') // Fix bullet points
+      .replace(/\s*\n\s*-\s*\n\s*/g, ' - ') // Fix dashes
+      .replace(/>\s*\n\s*</g, '><') // Remove line breaks between tags
+      .replace(/\s*\n\s*</g, ' <') // Clean up line breaks before closing tags
+      .replace(/>\s*\n\s*/g, '> ') // Clean up line breaks after opening tags
+      .replace(/\s{2,}/g, ' ') // Remove multiple spaces
+      .trim();
 
     if (!/^<(!DOCTYPE html>|html[\s>])/i.test(generatedResume)) {
       throw new Error("Generated content is not valid HTML");

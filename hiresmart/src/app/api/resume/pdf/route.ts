@@ -6,22 +6,28 @@ import { HtmlValidate } from "html-validate"
 let browser: import("puppeteer").Browser | null = null
 async function getBrowser() {
   if (!browser) {
-    const puppeteerModule = await import("puppeteer")
-    browser = await puppeteerModule.default.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--disable-gpu"
-      ],
-    })
+    try {
+      const puppeteerModule = await import("puppeteer")
+      browser = await puppeteerModule.default.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--disable-gpu"
+        ]
+      })
+    } catch (err) {
+      console.error("Failed to launch Puppeteer browser:", err)
+      throw err
+    }
   }
   return browser
 }
+
 
 // Validate HTML with more lenient rules
 async function validateHtml(html: string) {
