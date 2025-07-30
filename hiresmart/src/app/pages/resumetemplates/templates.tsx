@@ -205,11 +205,74 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
                 </div>
               </div>
 
-              {/* Template Preview */}
-              <div 
-                className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500"
-                dangerouslySetInnerHTML={{ __html: template.htmlContent }}
-              />
+                             {/* Template Preview */}
+               <div className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
+                 <iframe
+                   srcDoc={`
+                     <!DOCTYPE html>
+                     <html>
+                     <head>
+                       <meta charset="utf-8">
+                       <meta name="viewport" content="width=device-width, initial-scale=1">
+                       <style>
+                         body {
+                           font-family: 'Helvetica', Arial, sans-serif;
+                           line-height: 1.6;
+                           max-width: 800px;
+                           margin: 0 auto;
+                           padding: 20px;
+                           color: #333;
+                         }
+                         /* Base styles that can be overridden by template CSS */
+                         .header {
+                           text-align: center;
+                           margin-bottom: 30px;
+                         }
+                         h1 {
+                           color: #2c3e50;
+                           margin-bottom: 5px;
+                           font-size: 2em;
+                         }
+                         h2 {
+                           color: #3498db;
+                           border-bottom: 2px solid #3498db;
+                           padding-bottom: 5px;
+                           font-size: 1.5em;
+                           margin-top: 20px;
+                         }
+                         .section {
+                           margin-bottom: 20px;
+                         }
+                         .job {
+                           margin-bottom: 15px;
+                         }
+                         .date {
+                           color: #7f8c8d;
+                           font-style: italic;
+                         }
+                         ul {
+                           list-style: disc;
+                           margin-left: 20px;
+                         }
+                         li {
+                           margin-bottom: 5px;
+                         }
+                         p {
+                           margin-bottom: 10px;
+                         }
+                       </style>
+                       ${template.htmlContent.match(/<style[^>]*>[\s\S]*?<\/style>/gi)?.join('') || ''}
+                     </head>
+                     <body>
+                       ${template.htmlContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')}
+                     </body>
+                     </html>
+                   `}
+                   className="w-full h-[600px] border-0 rounded-lg"
+                   title={`${template.name} Preview`}
+                   sandbox="allow-scripts"
+                 />
+               </div>
             </CardContent>
           </Card>
         </div>
