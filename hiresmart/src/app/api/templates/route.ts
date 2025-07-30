@@ -93,7 +93,7 @@ const DEFAULT_TEMPLATES = [
 
 export async function GET() {
   try {
-  //  await connectDB()
+    await connectDB()
     
     // Check if templates exist, if not insert defaults
     const count = await Template.countDocuments()

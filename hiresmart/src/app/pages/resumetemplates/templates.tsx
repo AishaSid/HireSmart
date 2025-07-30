@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Eye, Download, Star, Heart, Zap } from "lucide-react"
+import { ArrowLeft, Eye, Download, Star, Heart, Zap, Loader2, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -29,6 +29,9 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [generatedResume, setGeneratedResume] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const router = useRouter()
 
   const categories = [
@@ -60,102 +63,122 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     ? templates 
     : templates.filter(template => template.category === selectedCategory)
 
-  const handleUseTemplate = async (templateId: string) => {
+  const handleGenerateResume = async (templateId: string) => {
+    setIsGenerating(true)
     try {
       const userId = localStorage.getItem('user_id');
       if (!userId) {
-        throw new Error('User data not found');
+        throw new Error('User data not found. Please login again.');
       }
 
-      
-      const cvResponse = await fetch(`/api/upload-cv?user_id=${userId}`);
-      if (!cvResponse.ok) throw new Error('Failed to fetch CV PDF');
-      const cvBlob = await cvResponse.blob();
-      // Convert PDF blob to base64 for AI API (if needed)
-      const cvBase64 = await blobToBase64(cvBlob);
+      // 1. Get template details
+      const template = templates.find(t => t._id === templateId);
+      if (!template) {
+        throw new Error('Template not found');
+      }
 
-      // 2. Send the CV to genAi endpoint to generate a resume
-      const aiResponse = await fetch('/api/resume/genAi', {
+      // 2. Generate AI-optimized resume - let the API handle PDF fetching
+      const aiResponse = await fetch('/api/resume/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
-          originalContent: cvBase64,
           templateId,
           userId,
+          commands: null
         }),
       });
-      if (!aiResponse.ok) throw new Error('Failed to generate resume');
-      const { optimized_resume } = await aiResponse.json();
+      
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('AI generation error:', errorText);
+        throw new Error('Failed to generate resume');
+      }
+      
+      const responseData = await aiResponse.json();
+      
+      if (!responseData.success || !responseData.generatedResume) {
+        throw new Error(responseData.error || 'Invalid response from AI service');
+      }
 
-      // 3. Download the generated resume as a file
-      const blob = new Blob([optimized_resume], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `resume-${templateId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-      toast.success('Resume generated and downloaded!');
-    } catch (error) {
-      toast.error('Failed to apply template');
-      console.error(error);
+      setGeneratedResume(responseData.generatedResume);
+      toast.success('Resume generated successfully!');
+      
+    } catch (error: any) {
+      console.error('Resume generation error:', error);
+      toast.error(error.message || 'Failed to generate resume');
+    } finally {
+      setIsGenerating(false);
     }
   };
+          
 
-  // Helper to convert Blob to base64
-  function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result?.toString().split(',')[1];
-        resolve(base64data || '');
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
+  const handleDownloadPDF = async () => {
+    if (!generatedResume) {
+      toast.error('No resume content available');
+      return;
+    }
 
-  const handleDownloadPDF = async (templateId: string) => {
+    setIsDownloading(true);
+    
     try {
       const userId = localStorage.getItem('user_id');
-      if (!userId) throw new Error('User data not found');
-     
-      const cvResponse = await fetch(`/api/upload-cv?user_id=${userId}`);
-      if (!cvResponse.ok) throw new Error('Failed to fetch CV PDF');
-      const cvBlob = await cvResponse.blob();
-      const cvBase64 = await blobToBase64(cvBlob);
-      // Send the CV to genAi endpoint to generate a resume
-      const aiResponse = await fetch('/api/resume/genAi', {
+      
+      const response = await fetch('/api/resume/pdf', {
         method: 'POST',
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
+          'Accept': 'application/pdf'
         },
-        body: JSON.stringify({
-          originalContent: cvBase64,
-          templateId,
-          userId,
-        }),
+        body: JSON.stringify({ 
+          htmlContent: generatedResume,
+          userId: userId || 'anonymous'
+        })
       });
-      if (!aiResponse.ok) throw new Error('Failed to generate resume');
-      const { optimized_resume } = await aiResponse.json();
-      // Download the generated resume as a file
-      const blob = new Blob([optimized_resume], { type: 'application/pdf' });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      // Check if response is actually a PDF
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        throw new Error('Invalid response format - expected PDF');
+      }
+
+      const blob = await response.blob();
+      
+      // Validate blob size
+      if (blob.size === 0) {
+        throw new Error('Empty PDF file received');
+      }
+
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `resume-${templateId}.pdf`;
+      a.download = `resume-${userId || 'generated'}-${new Date().getTime()}.pdf`;
+      a.style.display = 'none';
+      
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-      toast.success('Resume generated and downloaded!');
-    } catch (error) {
-      toast.error('Failed to download template');
-      console.error(error);
+      
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
+      toast.success('Resume downloaded successfully!');
+      
+    } catch (error: any) {
+      console.error('PDF download error:', error);
+      toast.error(error.message || 'Failed to download PDF');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -166,27 +189,72 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setSelectedTemplate(null)} className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => {
+            setSelectedTemplate(null)
+            setGeneratedResume(null)
+          }} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Templates
           </Button>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2 bg-transparent"
-              onClick={() => handleDownloadPDF(template._id)}
-            >
-              <Download className="h-4 w-4" />
-              Download PDF
-            </Button>
+          
+          {generatedResume ? (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 bg-transparent"
+                onClick={handleDownloadPDF}
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => handleGenerateResume(template._id)}
+                className="flex items-center gap-2"
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Regenerating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    Regenerate
+                  </>
+                )}
+              </Button>
+            </div>
+          ) : (
             <Button 
               className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 flex items-center gap-2"
-              onClick={() => handleUseTemplate(template._id)}
+              onClick={() => handleGenerateResume(template._id)}
+              disabled={isGenerating}
             >
-              <Download className="h-4 w-4" />
-              Use This Template
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4" />
+                  Generate Resume
+                </>
+              )}
             </Button>
-          </div>
+          )}
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -205,74 +273,21 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
                 </div>
               </div>
 
-                             {/* Template Preview */}
-               <div className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
-                 <iframe
-                   srcDoc={`
-                     <!DOCTYPE html>
-                     <html>
-                     <head>
-                       <meta charset="utf-8">
-                       <meta name="viewport" content="width=device-width, initial-scale=1">
-                       <style>
-                         body {
-                           font-family: 'Helvetica', Arial, sans-serif;
-                           line-height: 1.6;
-                           max-width: 800px;
-                           margin: 0 auto;
-                           padding: 20px;
-                           color: #333;
-                         }
-                         /* Base styles that can be overridden by template CSS */
-                         .header {
-                           text-align: center;
-                           margin-bottom: 30px;
-                         }
-                         h1 {
-                           color: #2c3e50;
-                           margin-bottom: 5px;
-                           font-size: 2em;
-                         }
-                         h2 {
-                           color: #3498db;
-                           border-bottom: 2px solid #3498db;
-                           padding-bottom: 5px;
-                           font-size: 1.5em;
-                           margin-top: 20px;
-                         }
-                         .section {
-                           margin-bottom: 20px;
-                         }
-                         .job {
-                           margin-bottom: 15px;
-                         }
-                         .date {
-                           color: #7f8c8d;
-                           font-style: italic;
-                         }
-                         ul {
-                           list-style: disc;
-                           margin-left: 20px;
-                         }
-                         li {
-                           margin-bottom: 5px;
-                         }
-                         p {
-                           margin-bottom: 10px;
-                         }
-                       </style>
-                       ${template.htmlContent.match(/<style[^>]*>[\s\S]*?<\/style>/gi)?.join('') || ''}
-                     </head>
-                     <body>
-                       ${template.htmlContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')}
-                     </body>
-                     </html>
-                   `}
-                   className="w-full h-[600px] border-0 rounded-lg"
-                   title={`${template.name} Preview`}
-                   sandbox="allow-scripts"
-                 />
-               </div>
+              {generatedResume ? (
+                <div className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
+                  <div dangerouslySetInnerHTML={{ __html: generatedResume }} />
+                </div>
+              ) : (
+                <div className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
+                  <div className="flex flex-col items-center justify-center h-96 text-gray-400">
+                    <Zap className="h-12 w-12 mb-4" />
+                    <h3 className="text-xl font-medium mb-2">No Resume Generated Yet</h3>
+                    <p className="text-center max-w-md">
+                      Click the "Generate Resume" button to create your AI-optimized resume using this template.
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -300,7 +315,6 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
         Resume Templates
       </h1>
 
-      {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
         {categories.map((category) => (
           <Button
@@ -321,7 +335,6 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
         ))}
       </div>
 
-      {/* Templates Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTemplates.map((template, index) => (
           <Card
@@ -350,10 +363,10 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
                     className="bg-white/90 hover:bg-white"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleDownloadPDF(template._id)
+                      setSelectedTemplate(template._id)
                     }}
                   >
-                    <Download className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -382,17 +395,16 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
         ))}
       </div>
 
-      {/* CTA Section */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-0">
         <CardContent className="p-8 text-center">
           <div className="max-w-2xl mx-auto">
             <Zap className="h-12 w-12 text-indigo-500 mx-auto mb-4" />
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">Can't find the perfect template?</h3>
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">Need a custom resume?</h3>
             <p className="text-gray-600 mb-6">
-              Our AI can create a custom template based on your industry and preferences
+              Our AI can analyze your experience and create a perfectly tailored resume
             </p>
             <Button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500">
-              Create Custom Template
+              Create Custom Resume
             </Button>
           </div>
         </CardContent>
