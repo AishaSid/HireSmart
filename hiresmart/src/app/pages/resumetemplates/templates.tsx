@@ -123,7 +123,7 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     try {
       const userId = localStorage.getItem('user_id');
       if (!userId) throw new Error('User data not found');
-      // Fetch the user's CV PDF from MongoDB API route
+     
       const cvResponse = await fetch(`/api/upload-cv?user_id=${userId}`);
       if (!cvResponse.ok) throw new Error('Failed to fetch CV PDF');
       const cvBlob = await cvResponse.blob();
