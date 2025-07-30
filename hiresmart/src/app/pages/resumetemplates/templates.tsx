@@ -6,6 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Eye, Download, Star, Heart, Zap } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+interface Template {
+  _id: string
+  name: string
+  category: string
+  description: string
+  imageUrl: string
+  isPopular: boolean
+  rating: number
+  downloads: number
+  htmlContent: string
+}
 
 interface ResumeTemplatesProps {
   onBack: () => void
@@ -13,84 +26,143 @@ interface ResumeTemplatesProps {
 
 export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   const categories = [
-    { id: "all", name: "All Templates", count: 24 },
-    { id: "modern", name: "Modern", count: 8 },
-    { id: "classic", name: "Classic", count: 6 },
-    { id: "creative", name: "Creative", count: 5 },
-    { id: "minimal", name: "Minimal", count: 5 },
+    { id: "all", name: "All Templates", count: templates.length },
+    { id: "modern", name: "Modern", count: templates.filter(t => t.category === "modern").length },
+    { id: "classic", name: "Classic", count: templates.filter(t => t.category === "classic").length },
+    { id: "creative", name: "Creative", count: templates.filter(t => t.category === "creative").length },
+    { id: "minimal", name: "Minimal", count: templates.filter(t => t.category === "minimal").length },
   ]
 
-  const templates = [
-    {
-      id: 1,
-      name: "Modern Professional",
-      category: "modern",
-      description: "Clean and contemporary design perfect for tech professionals",
-      image: "/placeholder.svg?height=400&width=300&text=Modern+Professional+Template",
-      popular: true,
-      rating: 4.9,
-      downloads: 15420,
-    },
-    {
-      id: 2,
-      name: "Executive Classic",
-      category: "classic",
-      description: "Traditional layout ideal for senior management positions",
-      image: "/placeholder.svg?height=400&width=300&text=Executive+Classic+Template",
-      popular: false,
-      rating: 4.7,
-      downloads: 8930,
-    },
-    {
-      id: 3,
-      name: "Creative Designer",
-      category: "creative",
-      description: "Bold and artistic template for creative professionals",
-      image: "/placeholder.svg?height=400&width=300&text=Creative+Designer+Template",
-      popular: true,
-      rating: 4.8,
-      downloads: 12340,
-    },
-    {
-      id: 4,
-      name: "Minimal Clean",
-      category: "minimal",
-      description: "Simple and elegant design that focuses on content",
-      image: "/placeholder.svg?height=400&width=300&text=Minimal+Clean+Template",
-      popular: false,
-      rating: 4.6,
-      downloads: 7650,
-    },
-    {
-      id: 5,
-      name: "Tech Innovator",
-      category: "modern",
-      description: "Perfect for software developers and tech professionals",
-      image: "/placeholder.svg?height=400&width=300&text=Tech+Innovator+Template",
-      popular: true,
-      rating: 4.9,
-      downloads: 18750,
-    },
-    {
-      id: 6,
-      name: "Business Professional",
-      category: "classic",
-      description: "Versatile template suitable for various business roles",
-      image: "/placeholder.svg?height=400&width=300&text=Business+Professional+Template",
-      popular: false,
-      rating: 4.5,
-      downloads: 6420,
-    },
-  ]
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates')
+        if (!response.ok) throw new Error('Failed to fetch templates')
+        const data = await response.json()
+        setTemplates(data.data)
+      } catch (error) {
+        toast.error('Failed to load templates')
+        console.error(error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchTemplates()
+  }, [])
 
-  const filteredTemplates =
-    selectedCategory === "all" ? templates : templates.filter((template) => template.category === selectedCategory)
+  const filteredTemplates = selectedCategory === "all" 
+    ? templates 
+    : templates.filter(template => template.category === selectedCategory)
+
+  const handleUseTemplate = async (templateId: string) => {
+    try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) {
+        throw new Error('User data not found');
+      }
+
+      
+      const cvResponse = await fetch(`/api/upload-cv?user_id=${userId}`);
+      if (!cvResponse.ok) throw new Error('Failed to fetch CV PDF');
+      const cvBlob = await cvResponse.blob();
+      // Convert PDF blob to base64 for AI API (if needed)
+      const cvBase64 = await blobToBase64(cvBlob);
+
+      // 2. Send the CV to genAi endpoint to generate a resume
+      const aiResponse = await fetch('/api/resume/genAi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalContent: cvBase64,
+          templateId,
+          userId,
+        }),
+      });
+      if (!aiResponse.ok) throw new Error('Failed to generate resume');
+      const { optimized_resume } = await aiResponse.json();
+
+      // 3. Download the generated resume as a file
+      const blob = new Blob([optimized_resume], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resume-${templateId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success('Resume generated and downloaded!');
+    } catch (error) {
+      toast.error('Failed to apply template');
+      console.error(error);
+    }
+  };
+
+  // Helper to convert Blob to base64
+  function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result?.toString().split(',')[1];
+        resolve(base64data || '');
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  const handleDownloadPDF = async (templateId: string) => {
+    try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) throw new Error('User data not found');
+      // Fetch the user's CV PDF from MongoDB API route
+      const cvResponse = await fetch(`/api/upload-cv?user_id=${userId}`);
+      if (!cvResponse.ok) throw new Error('Failed to fetch CV PDF');
+      const cvBlob = await cvResponse.blob();
+      const cvBase64 = await blobToBase64(cvBlob);
+      // Send the CV to genAi endpoint to generate a resume
+      const aiResponse = await fetch('/api/resume/genAi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalContent: cvBase64,
+          templateId,
+          userId,
+        }),
+      });
+      if (!aiResponse.ok) throw new Error('Failed to generate resume');
+      const { optimized_resume } = await aiResponse.json();
+      // Download the generated resume as a file
+      const blob = new Blob([optimized_resume], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resume-${templateId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success('Resume generated and downloaded!');
+    } catch (error) {
+      toast.error('Failed to download template');
+      console.error(error);
+    }
+  };
 
   if (selectedTemplate) {
-    const template = templates.find((t) => t.id === selectedTemplate)
+    const template = templates.find(t => t._id === selectedTemplate)
+    if (!template) return null
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -99,11 +171,18 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
             Back to Templates
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-              <Eye className="h-4 w-4" />
-              Preview
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 bg-transparent"
+              onClick={() => handleDownloadPDF(template._id)}
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
             </Button>
-            <Button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 flex items-center gap-2">
+            <Button 
+              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-500 flex items-center gap-2"
+              onClick={() => handleUseTemplate(template._id)}
+            >
               <Download className="h-4 w-4" />
               Use This Template
             </Button>
@@ -114,76 +193,23 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
           <Card>
             <CardContent className="p-8">
               <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">{template?.name}</h1>
-                <p className="text-gray-600 mb-4">{template?.description}</p>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">{template.name}</h1>
+                <p className="text-gray-600 mb-4">{template.description}</p>
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span>{template?.rating}</span>
+                    <span>{template.rating}</span>
                   </div>
                   <span>•</span>
-                  <span>{template?.downloads.toLocaleString()} downloads</span>
+                  <span>{template.downloads.toLocaleString()} downloads</span>
                 </div>
               </div>
 
               {/* Template Preview */}
-              <div className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
-                <div className="space-y-6">
-                  <div className="text-center border-b pb-6">
-                    <h2 className="text-2xl font-bold text-gray-900">John Doe</h2>
-                    <p className="text-indigo-600 font-medium">Senior Software Engineer</p>
-                    <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
-                      <span>john@example.com</span>
-                      <span>•</span>
-                      <span>(555) 123-4567</span>
-                      <span>•</span>
-                      <span>San Francisco, CA</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Professional Summary</h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Experienced software engineer with 8+ years of expertise in full-stack development, cloud
-                      architecture, and team leadership. Proven track record of delivering scalable solutions and
-                      driving technical innovation.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Experience</h3>
-                    <div className="space-y-4">
-                      <div className="border-l-2 border-indigo-200 pl-4">
-                        <h4 className="font-semibold text-gray-900">Senior Software Engineer</h4>
-                        <p className="text-indigo-600 text-sm">TechCorp Inc.</p>
-                        <p className="text-xs text-gray-500 mb-2">Jan 2020 - Present</p>
-                        <p className="text-gray-700 text-sm">
-                          Led development of microservices architecture serving 1M+ users daily.
-                        </p>
-                      </div>
-                      <div className="border-l-2 border-indigo-200 pl-4">
-                        <h4 className="font-semibold text-gray-900">Software Engineer</h4>
-                        <p className="text-indigo-600 text-sm">StartupXYZ</p>
-                        <p className="text-xs text-gray-500 mb-2">Jun 2018 - Dec 2019</p>
-                        <p className="text-gray-700 text-sm">
-                          Built and maintained React applications with Node.js backends.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {["JavaScript", "React", "Node.js", "Python", "AWS", "Docker"].map((skill) => (
-                        <span key={skill} className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div 
+                className="bg-white shadow-2xl rounded-lg p-8 max-w-2xl mx-auto animate-in fade-in duration-500"
+                dangerouslySetInnerHTML={{ __html: template.htmlContent }}
+              />
             </CardContent>
           </Card>
         </div>
@@ -191,17 +217,13 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     )
   }
 
-  const router = useRouter()
-  useEffect(() => {
-    window.history.pushState(null, '', window.location.href)
-    window.onpopstate = () => {
-      router.replace('/pages/dashboard')
-    }
-    window.scrollTo(0, 0);
-    return () => {
-      window.onpopstate = null
-    }
-  }, [])
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -211,9 +233,9 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
           Back to Dashboard
         </Button>
       </div>
-       <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-          Resume Templates
-        </h1>
+      <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+        Resume Templates
+      </h1>
 
       {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
@@ -240,18 +262,18 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTemplates.map((template, index) => (
           <Card
-            key={template.id}
+            key={template._id}
             className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden animate-in slide-in-from-bottom-4 duration-500"
             style={{ animationDelay: `${index * 100}ms` }}
-            onClick={() => setSelectedTemplate(template.id)}
+            onClick={() => setSelectedTemplate(template._id)}
           >
             <div className="relative">
               <img
-                src={template.image || "/placeholder.svg"}
+                src={template.imageUrl || "/placeholder.svg"}
                 alt={template.name}
                 className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
               />
-              {template.popular && (
+              {template.isPopular && (
                 <Badge className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
                   <Star className="h-3 w-3 mr-1" />
                   Popular
@@ -259,18 +281,25 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
               )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
-                    <Heart className="h-4 w-4" />
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    className="bg-white/90 hover:bg-white"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDownloadPDF(template._id)
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </div>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl group-hover:text-indigo-500 transition-colors">{template.name}</CardTitle>
+                <CardTitle className="text-xl group-hover:text-indigo-500 transition-colors">
+                  {template.name}
+                </CardTitle>
                 <div className="flex items-center gap-1 text-sm text-gray-500">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span>{template.rating}</span>
@@ -309,4 +338,4 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
   )
 }
 
-export default ResumeTemplates;
+export default ResumeTemplates

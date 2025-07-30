@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import mongoose from 'mongoose'
+import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
-
-// MongoDB model
+// Define the CV schema and model only once
 const CVSchema = new mongoose.Schema({
   user_id: String,
   filename: String,
@@ -10,12 +9,14 @@ const CVSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 })
 
-const CV = mongoose.models.Cv || mongoose.model('Cv', CVSchema)
+const CV = mongoose.models.Cv || mongoose.model('Cv', CVSchema);
 
 // Connect to MongoDB
 async function connectMongo() {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGODB_URI as string)
+    await mongoose.connect(process.env.MONGODB_URI as string, {
+      dbName: 'test', // Explicitly use the 'test' database
+    });
   }
 }
 
@@ -48,5 +49,35 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error('Upload error:', err.message || err)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    await connectMongo();
+    const { searchParams } = new URL(req.url);
+    const user_id = searchParams.get('user_id');
+    if (!user_id) {
+      return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });
+    }
+
+    let cv = await CV.findOne({ user_id });
+    if (!cv) {
+     cv = await CV.findOne();
+    }
+    if (!cv ) {
+      return NextResponse.json({ error: 'CV not found' }, { status: 404 });
+    }
+
+    return new NextResponse(cv.fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${cv.filename || 'cv.pdf'}"`,
+      },
+    });
+  } catch (err: any) {
+    console.error('Fetch error:', err.message || err);
+    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
   }
 }
