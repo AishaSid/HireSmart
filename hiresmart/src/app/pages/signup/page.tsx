@@ -588,12 +588,12 @@ const cvUpload = async (resume: File, userId: string) => {
                     </svg>
                     Back
                   </button>
-                  <button
+                  {/* <button
                     onClick={handleFinalSubmit}
                     className="flex-1 py-4 bg-white/30 backdrop-blur-sm  text-lg font-semibold rounded-lg transition-all duration-300 hover:bg-white/40 hover:underline hover:text-blue-500"
                   >
                     Skip for now
-                  </button>
+                  </button> */}
                   <button
                     onClick={handleFinalSubmit}
                     disabled={!resume}
