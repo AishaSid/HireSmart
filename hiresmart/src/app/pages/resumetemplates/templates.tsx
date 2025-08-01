@@ -47,6 +47,10 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
   const [generatedResume, setGeneratedResume] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingWord, setIsDownloadingWord] = useState(false);
+  const [showJobForm, setShowJobForm] = useState(false);
+  const [jobTitle, setJobTitle] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const router = useRouter();
 
   const categories = [
@@ -99,52 +103,89 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     setIsGenerating(true);
     try {
       const userId = localStorage.getItem("user_id");
-      if (!userId) {
-        throw new Error("User data not found. Please login again.");
-      }
+      if (!userId) throw new Error("User not authenticated");
 
-      // 1. Get template details
-      const template = templates.find((t) => t._id === templateId);
-      if (!template) {
-        throw new Error("Template not found");
-      }
+      // Get job details from your form state
+      const currentJobTitle = jobTitle;
+      const currentJobDescription = jobDescription;
 
-      // 2. Generate AI-optimized resume - let the API handle PDF fetching
-      const aiResponse = await fetch("/api/resume/generate", {
+      const response = await fetch("/api/resume/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           templateId,
           userId,
-          commands: null,
+          jobTitle: currentJobTitle,
+          jobDescription: currentJobDescription,
+          commands: null, // Add any user commands here
         }),
       });
 
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        console.error("AI generation error:", errorText);
-        throw new Error("Failed to generate resume");
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to generate resume");
       }
 
-      const responseData = await aiResponse.json();
-
-      if (!responseData.success || !responseData.generatedResume) {
-        throw new Error(
-          responseData.error || "Invalid response from AI service"
-        );
+      // Additional client-side validation
+      if (!data.generatedResume || !data.generatedResume.includes("<html")) {
+        throw new Error("Invalid resume format received");
       }
 
-      setGeneratedResume(responseData.generatedResume);
+      setGeneratedResume(data.generatedResume);
       toast.success("Resume generated successfully!");
     } catch (error: any) {
-      console.error("Resume generation error:", error);
-      toast.error(error.message || "Failed to generate resume");
+      console.error("Generation error:", error);
+      toast.error(error.message || "Resume generation failed");
+
+      // Fallback to basic resume if AI fails
+      const fallbackHtml = createFallbackResume(jobTitle, jobDescription);
+      setGeneratedResume(fallbackHtml);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Basic fallback function
+  const createFallbackResume = (fallbackJobTitle: string, fallbackJobDescription: string) => {
+    return `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Resume</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
+          h1 { color: #2c3e50; }
+          h2 { color: #3498db; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+          .section { margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <h1>${jobTitle || "Your Name"}</h1>
+        <div class="contact">
+          ${jobDescription ? `<p>Job Description: ${jobDescription}</p>` : ""}
+        </div>
+        
+        <div class="section">
+          <h2>Professional Summary</h2>
+          <p>${
+            jobDescription ||
+            "Experienced professional seeking new opportunities"
+          }</p>
+        </div>
+        
+          ${
+            jobDescription
+              ? `
+        <div class="section">
+          <h2>Experience</h2>
+          <p>${jobDescription}</p>
+        </div>
+        `
+              : ""
+          }
+      </body>
+      </html>`;
   };
 
   const handleDownloadPDF = async () => {
@@ -215,6 +256,80 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
     }
   };
 
+  const handleDownloadWord = async () => {
+    if (!generatedResume) {
+      toast.error("No resume content available");
+      return;
+    }
+
+    setIsDownloadingWord(true);
+
+    try {
+      const userId = localStorage.getItem("user_id");
+
+      const response = await fetch("/api/resume/word", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept:
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        },
+        body: JSON.stringify({
+          htmlContent: generatedResume,
+          userId: userId || "anonymous",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      // Check if response is actually a Word document
+      const contentType = response.headers.get("content-type");
+      if (
+        !contentType ||
+        !contentType.includes(
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+      ) {
+        throw new Error("Invalid response format - expected Word document");
+      }
+
+      const blob = await response.blob();
+
+      // Validate blob size
+      if (blob.size === 0) {
+        throw new Error("Empty Word document received");
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `resume-${
+        userId || "generated"
+      }-${new Date().getTime()}.docx`;
+      a.style.display = "none";
+
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+
+      toast.success("Word document downloaded successfully!");
+    } catch (error: any) {
+      console.error("Word download error:", error);
+      toast.error(error.message || "Failed to download Word document");
+    } finally {
+      setIsDownloadingWord(false);
+    }
+  };
+
   if (selectedTemplate) {
     const template = templates.find((t) => t._id === selectedTemplate);
     if (!template) return null;
@@ -227,6 +342,8 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
             onClick={() => {
               setSelectedTemplate(null);
               setGeneratedResume(null);
+              setJobTitle("");
+              setJobDescription("");
             }}
             className="flex items-center gap-2"
           >
@@ -276,6 +393,55 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
           </Card>
         </div>
 
+        {/* Job Information Form */}
+        {!generatedResume && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Job Information</CardTitle>
+                <CardDescription>
+                  Enter the job details to tailor your resume
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="jobTitle"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Job Title *
+                  </label>
+                  <input
+                    id="jobTitle"
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="e.g., Software Engineer, Marketing Manager"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="jobDescription"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Job Description (Optional)
+                  </label>
+                  <textarea
+                    id="jobDescription"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste the job description here to better tailor your resume..."
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* this is the button section */}
         <div className="flex items-center justify-center ">
           {generatedResume ? (
@@ -295,6 +461,24 @@ export function ResumeTemplates({ onBack }: ResumeTemplatesProps) {
                   <>
                     <Download className="h-4 w-4" />
                     Download PDF
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-transparent py-7"
+                onClick={handleDownloadWord}
+                disabled={isDownloadingWord}
+              >
+                {isDownloadingWord ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Download Word
                   </>
                 )}
               </Button>

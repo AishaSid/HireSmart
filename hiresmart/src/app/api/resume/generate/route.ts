@@ -5,7 +5,7 @@ import Resume from "@/models/resume";
 
 export async function POST(req: Request) {
   try {
-    const { templateId, userId, commands } = await req.json();
+    const { templateId, userId, jobTitle, jobDescription } = await req.json();
 
     if (!templateId || !userId) {
       throw new Error("Missing required fields");
@@ -23,13 +23,68 @@ export async function POST(req: Request) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash", // Using 1.5-flash for better HTML generation
       generationConfig: {
-        temperature: 0.3,
-        topP: 0.95,
+        temperature: 0.2, // Lower temperature for more structured output
+        topP: 0.9,
         maxOutputTokens: 4000,
       }
     });
+
+    // More explicit prompt with HTML structure requirements
+    const prompt = `
+    Generate a professional resume in STRICT HTML5 format based on the attached CV and these requirements:
+
+    JOB TITLE: ${jobTitle || 'Not specified'}
+    ${jobDescription ? `JOB DESCRIPTION KEY POINTS:\n${jobDescription.substring(0, 500)}` : ''}
+
+    TEMPLATE STYLE: ${template.style} must be followed in resume 
+
+    REQUIREMENTS:
+    1. Return ONLY valid HTML5 with this EXACT structure:
+       <!DOCTYPE html>
+       <html lang="en">
+       <head>
+         <meta charset="UTF-8">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>Resume</title>
+         <style>
+           /* Basic professional styling */
+           body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0 auto; max-width: 800px; padding: 20px; }
+           h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+           h2 { color: #3498db; margin-top: 20px; }
+           .section { margin-bottom: 20px; }
+           ul { padding-left: 20px; }
+         </style>
+       </head>
+       <body>
+         <!-- Resume content here -->
+       </body>
+       </html>
+
+    2. Content must include:
+       - Name and contact info at top
+       - Professional summary
+       - Relevant work experience (most recent first)
+       - Education
+       - Technical skills matching ${jobTitle || 'the position'}
+
+    3. Formatting rules:
+       - Use semantic HTML5 tags (section, article, etc.)
+       - Keep bullet points on one line (• Item one • Item two)
+       - No markdown or backticks
+       - No explanations or comments
+       - Quantify achievements where possible
+
+    4. Important:
+       - Tailor content specifically for ${jobTitle || 'this position'}
+       - Remove irrelevant jobs/education
+       - Highlight transferable skills
+       - Use action verbs (developed, implemented, optimized)
+       ${jobDescription ? '- Match skills to the job requirements' : ''}
+
+    FAILURE TO FOLLOW THESE INSTRUCTIONS WILL RESULT IN INVALID OUTPUT
+    `;
 
     const result = await model.generateContent({
       contents: [
@@ -42,20 +97,7 @@ export async function POST(req: Request) {
                 data: base64Pdf,
               }
             },
-            {
-              text: `
-Convert the attached resume into a professional HTML resume.
-Style: ${template.description}, ${template.style}.
-User commands: ${commands || "None"}.
-
-IMPORTANT: 
-- Return only a complete valid HTML document with <html> and <body> tags
-- Do not add extra line breaks or spacing around bullet points (•)
-- Keep contact information on single lines with proper spacing
-- No explanation or backticks
-- Ensure clean, professional formatting
-              `
-            }
+            { text: prompt }
           ]
         }
       ]
@@ -64,21 +106,11 @@ IMPORTANT:
     const response = await result.response;
     let generatedResume = response.text().trim();
 
-    // Remove markdown/code fencing if still present
-    generatedResume = generatedResume.replace(/```html\n?/g, '').replace(/```/g, '').trim();
+    // Strict HTML validation and cleanup
+    generatedResume = ensureValidHtml(generatedResume);
 
-    // Clean up extra line breaks around bullet points and contact info
-    generatedResume = generatedResume
-      .replace(/\s*\n\s*•\s*\n\s*/g, ' • ') // Fix bullet points
-      .replace(/\s*\n\s*-\s*\n\s*/g, ' - ') // Fix dashes
-      .replace(/>\s*\n\s*</g, '><') // Remove line breaks between tags
-      .replace(/\s*\n\s*</g, ' <') // Clean up line breaks before closing tags
-      .replace(/>\s*\n\s*/g, '> ') // Clean up line breaks after opening tags
-      .replace(/\s{2,}/g, ' ') // Remove multiple spaces
-      .trim();
-
-    if (!/^<(!DOCTYPE html>|html[\s>])/i.test(generatedResume)) {
-      throw new Error("Generated content is not valid HTML");
+    if (!isValidHtml(generatedResume)) {
+      throw new Error("Generated content failed HTML validation");
     }
 
     await saveGeneratedResume(userId, generatedResume, templateId);
@@ -91,6 +123,7 @@ IMPORTANT:
     });
 
   } catch (error: any) {
+    console.error("Resume generation error:", error);
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -99,7 +132,52 @@ IMPORTANT:
   }
 }
 
-// --- Template Info (hardcoded for now) ---
+// Strict HTML validation
+function isValidHtml(html: string): boolean {
+  const requiredTags = ['<!DOCTYPE html>', '<html', '<head', '<body', '</html>'];
+  return requiredTags.every(tag => html.includes(tag));
+}
+
+// Ensure proper HTML structure
+function ensureValidHtml(content: string): string {
+  let html = content.trim();
+
+  // Remove all markdown artifacts
+  html = html.replace(/```html?/g, '').replace(/```/g, '').trim();
+
+  // Ensure doctype exists
+  if (!html.startsWith('<!DOCTYPE html>')) {
+    html = `<!DOCTYPE html>${html}`;
+  }
+
+  // Ensure html tags exist
+  if (!html.includes('<html')) {
+    html = html.replace('<!DOCTYPE html>', `<!DOCTYPE html>\n<html lang="en">`);
+  }
+  if (!html.includes('</html>')) {
+    html = `${html}\n</html>`;
+  }
+
+  // Ensure head and body exist
+  if (!html.includes('<head>')) {
+    html = html.replace('<html', '<html>\n<head>\n<meta charset="UTF-8">\n<title>Resume</title>\n</head>');
+  }
+  if (!html.includes('<body>')) {
+    html = html.replace('</head>', '</head>\n<body>');
+    html = html.replace('</html>', '</body>\n</html>');
+  }
+
+  // Clean up whitespace
+  html = html
+    .replace(/\s*\n\s*•\s*\n\s*/g, ' • ')
+    .replace(/>\s+</g, '><')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  return html;
+}
+
+// --- Template Info ---
 async function getTemplateDetails(templateId: string) {
   return {
     id: templateId,
@@ -113,7 +191,7 @@ async function getTemplateDetails(templateId: string) {
 // --- Save Resume ---
 async function saveGeneratedResume(userId: string, content: string, templateId: string) {
   try {
-    // Save to DB if needed
+    // Save to DB implementation
   } catch (error) {
     console.error("Error saving resume:", error);
   }

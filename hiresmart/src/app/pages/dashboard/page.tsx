@@ -45,20 +45,20 @@ export default function Dashboard() {
             color: "from-indigo-400 to-indigo-500",
             action: () => setActiveSection("templates"),
         },
-        {
-            icon: Clock,
-            title: "My Resumes",
-            description: "View and manage your resume history",
-            color: "from-purple-400 to-purple-500",
-            action: () => setActiveSection("my-resumes"),
-        },
-        {
-            icon: Sparkles,
-            title: "Generate Cover Letter",
-            description: "Create compelling cover letters instantly",
-            color: "from-cyan-400 to-cyan-500",
-            action: () => setActiveSection("cover-letter"),
-        },
+        // {
+        //     icon: Clock,
+        //     title: "My Resumes",
+        //     description: "View and manage your resume history",
+        //     color: "from-purple-400 to-purple-500",
+        //     action: () => setActiveSection("my-resumes"),
+        // },
+        // {
+        //     icon: Sparkles,
+        //     title: "Generate Cover Letter",
+        //     description: "Create compelling cover letters instantly",
+        //     color: "from-cyan-400 to-cyan-500",
+        //     action: () => setActiveSection("cover-letter"),
+        // },
         {
             icon: CheckCircle,
             title: "ATS Analysis",
@@ -66,13 +66,13 @@ export default function Dashboard() {
             color: "from-emerald-400 to-emerald-500",
             action: () => setActiveSection("ats-optimizer"),
         },
-        {
-            icon: Plus,
-            title: "Don't have a CV?",
-            description: "Generate one from scratch with our guided form",
-            color: "from-rose-400 to-rose-500",
-            action: () => setActiveSection("cv-generator"),
-        },
+        // {
+        //     icon: Plus,
+        //     title: "Don't have a CV?",
+        //     description: "Generate one from scratch with our guided form",
+        //     color: "from-rose-400 to-rose-500",
+        //     action: () => setActiveSection("cv-generator"),
+        // },
     ]
 
     const stats = [
@@ -84,14 +84,14 @@ export default function Dashboard() {
 
     const renderContent = () => {
         switch (activeSection) {
-            case "cv-generator":
-             return <CVGeneratorForm onBack={() => setActiveSection("dashboard")} />
+            // case "cv-generator":
+            //  return <CVGeneratorForm onBack={() => setActiveSection("dashboard")} />
             case "templates":
              return <Templates onBack={() => setActiveSection("dashboard")} />
-            case "my-resumes":
-             return <MyResumes onBack={() => setActiveSection("dashboard")} />
-            case "cover-letter":
-             return <CoverLetter onBack={() => setActiveSection("dashboard")} />
+            // case "my-resumes":
+            //  return <MyResumes onBack={() => setActiveSection("dashboard")} />
+            // case "cover-letter":
+            //  return <CoverLetter onBack={() => setActiveSection("dashboard")} />
             case "ats-optimizer":
              return <ATSOptimizer onBack={() => setActiveSection("dashboard")} />
             default:
@@ -200,14 +200,14 @@ export default function Dashboard() {
                                 <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
                                     Join thousands of professionals who have successfully landed their dream jobs with HireSmart
                                 </p>
-                                <Button
+                                {/* <Button
                                     size="lg"
                                     className="bg-white text-blue-500 hover:bg-gray-100 px-8 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl py-6 text-lg font-semibold rounded-lg"
                                     onClick={() => setActiveSection("cv-generator")}
                                 >
                                     <Plus className="mr-2 h-5 w-5" />
                                     Create Your First Resume
-                                </Button>
+                                </Button> */}
                             </div>
                         </section>
                     </div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
                             >
                                 Templates
                             </button>
-                            <button
+                            {/* <button
                                 onClick={() => setActiveSection("my-resumes")}
                                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === "my-resumes"
                                     ? "text-indigo-500 bg-indigo-50"
@@ -280,7 +280,7 @@ export default function Dashboard() {
                                     }`}
                             >
                                 My Resumes
-                            </button>
+                            </button> */}
                         </nav>
                     </div>
                 </div>
@@ -307,7 +307,7 @@ export default function Dashboard() {
                             >
                                 Templates
                             </button>
-                            <button
+                            {/* <button
                                 onClick={() => {
                                     setActiveSection("my-resumes")
                                     setMobileMenuOpen(false)
@@ -315,7 +315,7 @@ export default function Dashboard() {
                                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 w-full text-left"
                             >
                                 My Resumes
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 )}
